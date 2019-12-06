@@ -4,12 +4,12 @@ import pygame
 import random
 import sys
 
-from ammo import Ammo
-from controls import ControlPanel
-from crosshair import CrossHair
-from player import Player
-from tank import Tank, update_turret
-from terrain import Terrain
+from partillery.ammo import Ammo
+from partillery.controls import ControlPanel
+from partillery.crosshair import CrossHair
+from partillery.player import Player
+from partillery.tank import Tank, update_turret
+from partillery.terrain import Terrain
 
 
 # ---------------------  UTIL FUNCTIONS  --------------------- #
