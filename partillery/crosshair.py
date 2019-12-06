@@ -5,8 +5,7 @@ import math
 class CrossHair(pygame.sprite.Sprite):
     def __init__(self, screen, play_left, play_top, start_pos, angle, r):
         super(CrossHair, self).__init__
-        img = pygame.image.load(
-            "C:\\Data\\Study\\cloud\\___python_game\\partillery\\resources\\images\\crosshair.png")
+        img = pygame.image.load("../resources/images/crosshair.png")
         self.surf = scale(img, 8)
         self.rect = self.surf.get_rect()
         self.x0 = start_pos[0]

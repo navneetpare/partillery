@@ -4,8 +4,7 @@ import pygame
 class Ammo(pygame.sprite.Sprite):
     def __init__(self, screen, play_left, play_top, ammo_x0, ammo_y0):
         super(Ammo, self).__init__
-        self.surf = pygame.image.load(
-            "C:\\Data\\Study\\cloud\\___python_game\\partillery\\resources\\images\\ammo_4.gif")
+        self.surf = pygame.image.load("../resources/images/ammo_4.gif")
         self.surf.set_alpha(255)
         self.rect = self.surf.get_rect()
         self.rect.x = ammo_x0

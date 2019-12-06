@@ -7,8 +7,7 @@ col_turret = 200, 200, 200
 class Tank(pygame.sprite.Sprite):
     def __init__(self, screen, play_left, play_top, col, loc_x, loc_y, angle):
         super(Tank, self).__init__
-        self.surf = pygame.image.load(
-            "C:\\Data\\Study\\cloud\\___python_game\\partillery\\resources\\images\\tank_" + col + ".png")
+        self.surf = pygame.image.load("../resources/images/tank_" + col + ".png")
         self.rect = self.surf.get_rect()
         self.rect.x = loc_x
         self.rect.y = loc_y

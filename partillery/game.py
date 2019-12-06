@@ -91,12 +91,11 @@ speed_base = 1000
 # Initialize Display Elements
 
 pygame.display.set_caption("Partillery")
-pygame.display.set_icon(pygame.image.load("C:\\Data\\Study\\cloud\\___python_game\\partillery\\resources\\images\\window_icon.png"))
+pygame.display.set_icon(pygame.image.load("../resources/images/window_icon.png"))
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (100, 40)
 screen = pygame.display.set_mode((full_w, full_h), pygame.RESIZABLE)
 screen.fill(col_screen)
-play_img = pygame.image.load(
-    "C:\\Data\\Study\\cloud\\___python_game\\partillery\\resources\\images\\nighthd_starry.png").convert()
+play_img = pygame.image.load("../resources/images/nighthd_starry.png").convert()
 playsurf = pygame.transform.scale(play_img, (play_w, play_h))
 playsurf_rect = playsurf.get_rect()
 playsurf_rect.x = play_left
@@ -161,7 +160,7 @@ while True:
                     t0 = pygame.time.get_ticks()
 
                 # ANGLE LEFT
-                if cpl.angle_left.collidepoint(event.pos):
+                if cpl.angle_inc.collidepoint(event.pos):
                     curr_player.angle += 1
                     if curr_player.angle == 360:
                         curr_player.angle = 0
@@ -170,7 +169,7 @@ while True:
                     update_turret(screen, curr_player.tank, curr_player.angle)
 
                 # ANGLE RIGHT
-                if cpl.angle_right.collidepoint(event.pos):
+                if cpl.angle_dec.collidepoint(event.pos):
                     curr_player.angle -= 1
                     if curr_player.angle < 0:
                         curr_player.angle = 359
