@@ -54,6 +54,7 @@ class ControlPanel:
         power_dec_img = pygame.image.load("../resources/images/dec_button.png")
         fire_img = pygame.image.load("../resources/images/param_window.png")
         fire_text_img = pygame.image.load("../resources/images/fire_text.png")
+        scoreboard_frame = pygame.image.load("../resources/images/scoreboard_frame.png")
 
         # scale surfaces
 
@@ -67,7 +68,7 @@ class ControlPanel:
         power_bar_surf = scale(power_bar_img, control_scale)
         fire_surf = scale(fire_img, control_scale)
         fire_text_surf = scale(fire_text_img, control_scale / 1.2)
-        scoreboard_surf = pygame.Surface((int(sec_w * 0.8), int(cpl_h * 0.8)))
+        scoreboard_surf = scale(scoreboard_frame, control_scale)
 
         # get rects with simple names
 
@@ -119,9 +120,14 @@ class ControlPanel:
         self.power_bar_viewer = pygame.Surface((int(self.power_bar.w * 0.8), int(self.power_bar.h * 0.6)))
         self.power_bar_viewer_rect = self.power_bar_viewer.get_rect()
         self.power_bar_viewer_rect.center = self.power_bar.center
-        self.power_bar_viewer.fill(col_screen)  # background fill
+        self.power_bar_viewer.fill(col_screen)
 
-        scoreboard_surf.fill(col_screen)
+        self.score_viewer = pygame.Surface((int(self.scoreboard.w * 0.8), int(self.scoreboard.h * 0.8)))
+        self.score_viewer_rect = self.score_viewer.get_rect()
+        self.score_viewer_rect.center = (self.scoreboard.centerx + 1, self.scoreboard.centery + 1)
+        self.score_viewer.fill(col_screen)
+
+        # scoreboard_surf.fill(col_screen)
 
         # fill area max size and loc
 
@@ -163,7 +169,7 @@ class ControlPanel:
 
         self.scoreboard_heading = self.font_param.render("Scoreboard", True, col_text_white)
         self.scoreboard_heading_rect = self.scoreboard_heading.get_rect()
-        self.scoreboard_heading_rect.center = (self.scoreboard.centerx, self.scoreboard.top + self.scoreboard.h / 15)
+        self.scoreboard_heading_rect.center = (self.score_viewer_rect.centerx, self.score_viewer_rect.top + self.score_viewer_rect.h / 15)
 
         '''self.fire_text = self.font.render("Fire", True, col_fire)
         self.fire_text_rect = self.fire_text.get_rect()
@@ -193,6 +199,7 @@ class ControlPanel:
                       (self.wp_heading, self.wp_heading_rect),
                       (fire_text_surf, self.fire_text),
                       (scoreboard_surf, self.scoreboard),
+                      (self.score_viewer, self.score_viewer_rect),
                       (self.scoreboard_heading, self.scoreboard_heading_rect)
                       ), 0)
 
