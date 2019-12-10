@@ -31,6 +31,7 @@ def clamp(n, min_n, max_n):
 
 # ------------------------------------------------------------ #
 
+
 # Library Initialization
 pygame.init()
 clock = pygame.time.Clock()
@@ -228,15 +229,6 @@ while True:
                     looping = True
 
                     while looping:
-
-                        event_list = pygame.event.get(pygame.MOUSEBUTTONUP)
-                        for e in event_list:
-                            if e.button == 1:
-                                looping = False
-                                pygame.event.set_grab(False)
-                                pygame.mouse.set_pos(saved_pos)
-                                pygame.mouse.set_visible(True)
-
                         pos2 = pygame.mouse.get_pos()[0]
                         curr_player.angle = int((pos1 - pos2) / 2) + initial_angle
 
@@ -248,6 +240,14 @@ while True:
                         cpl.update_angle(screen, curr_player.angle)
                         update_turret(screen, curr_player.tank, curr_player.angle)
                         crosshair.update(screen, playsurf_rect, play_left, play_top, curr_player.angle)
+
+                        event_list = pygame.event.get(pygame.MOUSEBUTTONUP)
+                        for e in event_list:
+                            if e.button == 1:
+                                looping = False
+                                pygame.event.set_grab(False)
+                                pygame.mouse.set_pos(saved_pos)
+                                pygame.mouse.set_visible(True)
 
                         pygame.display.update()
                         clock.tick(60)
@@ -273,7 +273,20 @@ while True:
         if not (ammo.go(screen, playsurf_rect, play_left, play_top, terr.rect, enemy.tank.rect, ammo_new_x,
                         ammo_new_y)):
             mode = MODE_SELECTION
-            ammo = None
+            del ammo
+            # change player
+            if curr_player == player1:
+                curr_player = player2
+            else:
+                curr_player = player1
+
+            cpl.update_angle(screen, curr_player.angle)
+            cpl.update_power(screen, curr_player.power)
+
+            crosshair.erase(screen)
+            del crosshair
+            crosshair = CrossHair(screen, play_left, play_top, curr_player.tank.rect.midtop, curr_player.angle,
+                                  int(curr_player.tank.rect.w * 1.5))
             break
 
         pygame.display.update()

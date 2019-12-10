@@ -13,10 +13,8 @@ default_power_val = 50
 
 class ControlPanel:
     def __init__(self, screen: pygame.Surface, cpl_x, cpl_y, cpl_w, cpl_h, control_scale):
-        # control_img = pygame.image.load(
-          #  "C:\\Data\\Study\\cloud\\___python_game\\partillery\\resources\\images\\control_panel.png").convert()
-        control_img = pygame.image.load("../resources/images/control_panel_3.png").convert()
 
+        control_img = pygame.image.load("../resources/images/control_panel_3.png").convert()
         self.surf = pygame.transform.scale(control_img, (cpl_w, cpl_h))
         self.rect = self.surf.get_rect()
         self.rect.x = cpl_x

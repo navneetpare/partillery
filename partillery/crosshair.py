@@ -27,6 +27,9 @@ class CrossHair(pygame.sprite.Sprite):
                                  self.rect.x, self.rect.y, self.rect.w, self.rect.h)  # get new eraser
         screen.blit(self.surf, self.rect)  # draw to new loc
 
+    def erase(self, screen):
+        screen.blit(self.eraser, (self.rect.x, self.rect.y))  # erase trail
+
 
 def scale(surface, scaling_factor):
     rect = surface.get_rect()
@@ -38,3 +41,6 @@ def scale(surface, scaling_factor):
 def get_eraser(screen, play_left, play_top, x, y, w, h):
     area = screen.subsurface(pygame.Rect(x - play_left, y - play_top, w, h)).copy()
     return area
+
+
+
