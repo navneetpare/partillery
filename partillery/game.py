@@ -1,8 +1,12 @@
+# https://stackoverflow.com/questions/12787650/finding-the-index-of-n-biggest-elements-in-python-array-list-efficiently?noredirect=1&lq=1
+
 import math
 import os
 import pygame
 import random
 import sys
+import numpy as np
+import time
 
 from partillery.ammo import Ammo
 from partillery.controls import ControlPanel
@@ -14,7 +18,7 @@ from partillery.terrain import Terrain
 
 # ---------------------  UTIL FUNCTIONS  --------------------- #
 def get_eraser(x, y, w, h):
-    area = playsurf.subsurface(pygame.Rect(x - play_left, y - play_top, w, h)).copy()
+    area = screen.subsurface(pygame.Rect(x - play_left, y - play_top, w, h)).copy()
     return area
 
 
@@ -29,6 +33,47 @@ def clamp(n, min_n, max_n):
     return max(min(max_n, n), min_n)
 
 
+def get_slope_radians(x):
+    # slope = (y2 - y1) / (x2 - x1)
+    m = - (terr.points[1][x + 1] - terr.points[1][x]) / (terr.points[0][x + 1] - terr.points[0][x])
+    return math.atan(m)
+
+
+def get_resting_slope_right(x):
+    # for right hemisphere of r = tank_w, find point with max slope with respect to the given x on the terrain
+    m = 0
+    i_max = None
+    for i in range(1, tank_w):
+        mtemp = - (terr.points[1][x + 1] - terr.points[1][x]) / (terr.points[0][x + 1] - terr.points[0][x])
+        if mtemp >= m:
+            m = mtemp
+            i_max = i
+    return math.atan(m)
+
+
+def get_avg_slope_radians_right(x):
+    # for right hemisphere of r = tank_w, find point with max slope with respect to the given x on the terrain
+    d_max = 0
+    x1 = None
+    for i in range(tank_w - 1, 0, -1):
+        # d = sqrt((y2-y1)^2 + (x2-x1)^2)
+        d = math.sqrt(
+            (terr.points[1][x + i - 1] - terr.points[1][x - 1]) ** 2 + (
+                        terr.points[0][x + i - 1] - terr.points[0][x - 1]) ** 2)
+        if tank_w >= d > d_max:
+            d_max = d
+            x1 = x + i
+    m = -(terr.points[1][x1 - 1] - terr.points[1][x - 1]) / (terr.points[0][x1 - 1] - terr.points[0][x - 1])
+    return math.atan(m)
+
+
+def get_tank_center(x, angle):
+    y = terr.points[1][x - 1]
+    x1 = int(tank_h / 2 * math.cos(angle + math.pi / 2) + x)
+    y1 = int(-(tank_h / 2) * math.sin(angle + math.pi / 2) + y)
+    return x1, y1
+
+
 # ------------------------------------------------------------ #
 
 
@@ -40,7 +85,8 @@ clock = pygame.time.Clock()
 
 MODE_SELECTION = "Selection"
 MODE_FLIGHT = "Flight"
-mode = MODE_SELECTION
+MODE_TEST = "Test"
+mode = MODE_TEST
 
 # Colors
 
@@ -103,22 +149,29 @@ playsurf_rect.x = play_left
 playsurf_rect.y = play_top
 screen.blit(playsurf, (play_left, play_top))
 
-#  Draw initial objects
-
-terr = Terrain(screen, play_left, play_w, play_bottom, terrain_h)
+# ---------------------  Draw initial elements  --------------------- #
 
 cpl = ControlPanel(screen, play_left, play_bottom, play_w, full_h - play_h, control_scale)
+terr = Terrain(screen, play_w, play_h, 'Cliff')
+# get_slope(1)
+tank1_x = random.randint(play_left, ((play_right - play_left) / 2) - tank_w)  # random x location
+tank1_x = 17
+tank1_slope_radians = get_slope_radians(tank1_x)  # slope angle on terrain curve
+tank1_center = get_tank_center(tank1_x, tank1_slope_radians)  # new center
 
-player1.tank = Tank(screen, play_left, play_top, "blue",
-                    random.randint(play_left, ((play_right - play_left) / 2) - tank_w),
-                    (play_bottom - terrain_h - tank_h), player1.angle)
+tank2_x = random.randint(((play_right - play_left) / 2), play_right - tank_w)
+tank2_slope_radians = get_slope_radians(tank2_x)
+tank2_center = get_tank_center(tank2_x, tank2_slope_radians)
 
-player2.tank = Tank(screen, play_left, play_top, "red",
-                    random.randint(((play_right - play_left) / 2), play_right - tank_w),
-                    (play_bottom - terrain_h - tank_h), player2.angle)
+player1.tank = Tank(screen, 'blue', 'right', tank1_x, tank1_center, tank1_slope_radians, player1.angle)
+# player2.tank = Tank(screen, "red", "left", tank2_center, tank2_slope_radians, player2.angle)
 
-crosshair = CrossHair(screen, play_left, play_top, curr_player.tank.rect.midtop, curr_player.angle,
-                      int(curr_player.tank.rect.w * 1.5))
+screen.blit(terr.surf, (0, 0))
+
+# player1.tank.move(screen, 5, terr.points[1][4] + tank_h, 37, terr.points[1][36]+tank_h)
+
+# crosshair = CrossHair(screen, play_left, play_top, curr_player.tank.rect.midtop, curr_player.angle,
+# int(curr_player.tank.rect.w * 1.5))
 
 pygame.display.update()
 
@@ -291,3 +344,23 @@ while True:
 
         pygame.display.update()
         clock.tick(120)
+
+    while mode == MODE_TEST:
+        done = False
+        speed = 2
+        while not done:
+            for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    #  move
+                    xnew = player1.tank.proj_x + speed
+                    angle = get_slope_radians(xnew)
+                    if xnew >= play_w:  # or (angle >= math.pi / 4):
+                        done = True
+                        break
+                    center = get_tank_center(xnew, angle)
+                    player1.tank.move_by_center(screen, center, xnew, angle)
+                    pygame.display.update()
+                    # time.sleep(500000)'''
+                    pygame.event.clear()
+                    clock.tick(60)
+

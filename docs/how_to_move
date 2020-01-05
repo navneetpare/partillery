@@ -1,0 +1,10 @@
+When initializing an object,
+- eraser = copy current rect
+- eraser_loc = current loc
+
+When you move,
+
+- blit eraser to erase_loc
+- set current loc = new loc
+- set eraser = copy current rect
+- set eraser_loc = current loc
