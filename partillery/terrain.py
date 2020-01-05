@@ -192,7 +192,7 @@ class Terrain:
         for i in range(1, 3):
             m = np.column_stack((x, y))
             # pygame.draw.lines(self.surf, g1, False, m)
-            pygame.draw.lines(self.surf, (200,200,200), False, m)
+            pygame.draw.lines(self.surf, (170, 170, 170), False, m)
             y += 1
             y.clip(0, play_h)
         '''for i in range(21, 40):
@@ -209,12 +209,12 @@ class Terrain:
         for i in range(4, play_h):
             m = np.column_stack((x, y))
             # pygame.draw.lines(self.surf, (0, green_val // 3.5, 0, 255), False, m)
-            pygame.draw.lines(self.surf, (200, 200, 200, 255), False, m)
+            pygame.draw.lines(self.surf, (170, 170, 170, 255), False, m)
             # pygame.draw.lines(self.surf, b4, False, m)
             green_val -= 0.3
             y += 1
             y.clip(0, play_h)
 
         # Blit terrain surf onto screen
-        # screen.blit(self.surf, (0, 0))
+        screen.blit(self.surf, (0, 0))
         self.mask = pygame.mask.from_surface(self.surf, 254)

@@ -11,50 +11,48 @@ class Tank(pygame.sprite.Sprite):
         self.proj_x = proj_x
         self.surf_org = pygame.image.load("../resources/images/tank_" + col + ".png")
         self.h = self.surf_org.get_rect().h  # un-rotated height
-        self.surf = pygame.transform.rotate(self.surf_org, math.degrees(slope_radians))
-        # self.surf = self.surf_org
-        self.rect = self.surf.get_rect()
-        self.rect.center = center
+        self.surf = None
+        self.rect = None
         self.orientation = orientation
-        self.eraser = get_eraser(screen, self.rect.x, self.rect.y, self.rect.w, self.rect.h)
-        # self.eraser = None
-        self.eraser_loc = self.rect.topleft
-        print('###### Tank Init')
+        self.eraser = None
+        self.eraser_loc = None
+        print('================================= Tank Init')
         print('rect = ' + str(self.rect))
         print('eraser = ' + str(self.eraser))
         print('eraser loc = ' + str(self.eraser_loc))
         print('slope = ' + str(slope_radians))
         print('center = ' + str(center))
 
-        screen.blit(self.surf, (self.rect.x, self.rect.y))
+        # screen.blit(self.surf, (self.rect.x, self.rect.y))
         # eraser for square containing tank and turret = 2x tank rect.
         # self.combo_eraser = get_eraser(screen, self.rect.x, self.rect.y - self.rect.h, self.rect.w, self.rect.h * 2)
         # self.combo_erase_loc = pygame.Rect(self.rect.x, self.rect.y - self.rect.h, self.rect.w, self.rect.h * 2)
         # self.turret = Turret(screen, self.rect.center, tank_h, turret_angle) screen.blit(self.surf, self.rect)
         # self.move_by_center(screen, play_left, play_top, center, slope_radians)
+        self.move_by_center(screen, center, proj_x, slope_radians)
 
     def move_by_center(self, screen, center, proj_x, slope_radians):
         # print('::::: Moving Tank')
         self.surf = pygame.transform.rotate(self.surf_org, math.degrees(slope_radians))
         self.rect = self.surf.get_rect()
-        print('###### Erasing with:')
-        print('eraser = ' + str(self.eraser))
-        print('eraser_loc = ' + str(self.eraser_loc))
         if self.eraser is not None:
+            print('================================= Erasing with:')
+            print('eraser = ' + str(self.eraser))
+            print('eraser_loc = ' + str(self.eraser_loc))
             screen.blit(self.eraser, self.eraser_loc)  # erase trail)
         self.rect.center = center  # move
         self.proj_x = proj_x
         self.eraser_loc = self.rect.x, self.rect.y  # save current loc for eraser
         self.eraser = get_eraser(screen, self.rect.x, self.rect.y, self.rect.w, self.rect.h)  # save new eraser
         screen.blit(self.surf, self.rect)  # draw to new loc
-        print('###### Moved to')
+        print('================================= Moved to')
         print('rect = ' + str(self.rect))
         print('eraser = ' + str(self.eraser))
         print('eraser loc = ' + str(self.eraser_loc))
         print('slope = ' + str(slope_radians))
         print('center = ' + str(center))
 
-    def move_by_midbottom(self, screen, x, y, slope_radians):
+    '''def move_by_midbottom(self, screen, x, y, slope_radians):
         self.surf = pygame.transform.rotate(self.surf_org, math.degrees(slope_radians))
         # self.rect = self.surf.get_rect()
         screen.blit(self.eraser, self.eraser_loc)  # erase trail
@@ -80,7 +78,7 @@ class Tank(pygame.sprite.Sprite):
         print('eraser = ' + str(self.eraser))
         print('eraser loc = ' + str(self.eraser_loc))
         print('slope = ' + str(slope_radians))
-        print('bottom_left = ' + str(bottom_left))
+        print('bottom_left = ' + str(bottom_left))'''
 
 
 class Turret:

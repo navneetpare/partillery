@@ -152,10 +152,10 @@ screen.blit(playsurf, (play_left, play_top))
 # ---------------------  Draw initial elements  --------------------- #
 
 cpl = ControlPanel(screen, play_left, play_bottom, play_w, full_h - play_h, control_scale)
-terr = Terrain(screen, play_w, play_h, 'Cliff')
+terr = Terrain(screen, play_w, play_h, 'Hill')
 # get_slope(1)
 tank1_x = random.randint(play_left, ((play_right - play_left) / 2) - tank_w)  # random x location
-tank1_x = 17
+tank1_x = 32
 tank1_slope_radians = get_slope_radians(tank1_x)  # slope angle on terrain curve
 tank1_center = get_tank_center(tank1_x, tank1_slope_radians)  # new center
 
@@ -163,10 +163,10 @@ tank2_x = random.randint(((play_right - play_left) / 2), play_right - tank_w)
 tank2_slope_radians = get_slope_radians(tank2_x)
 tank2_center = get_tank_center(tank2_x, tank2_slope_radians)
 
-player1.tank = Tank(screen, 'blue', 'right', tank1_x, tank1_center, tank1_slope_radians, player1.angle)
+player1.tank = Tank(screen, 'red', 'right', tank1_x, tank1_center, tank1_slope_radians, player1.angle)
 # player2.tank = Tank(screen, "red", "left", tank2_center, tank2_slope_radians, player2.angle)
 
-screen.blit(terr.surf, (0, 0))
+# screen.blit(terr.surf, (0, 0))
 
 # player1.tank.move(screen, 5, terr.points[1][4] + tank_h, 37, terr.points[1][36]+tank_h)
 
@@ -346,21 +346,37 @@ while True:
         clock.tick(120)
 
     while mode == MODE_TEST:
+        xnew = tank1_x
         done = False
         speed = 2
-        while not done:
-            for event in pygame.event.get():
-                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                    #  move
-                    xnew = player1.tank.proj_x + speed
-                    angle = get_slope_radians(xnew)
-                    if xnew >= play_w:  # or (angle >= math.pi / 4):
-                        done = True
-                        break
-                    center = get_tank_center(xnew, angle)
-                    player1.tank.move_by_center(screen, center, xnew, angle)
-                    pygame.display.update()
-                    # time.sleep(500000)'''
-                    pygame.event.clear()
-                    clock.tick(60)
+        on_click = False
+        while not done and xnew < play_w - 75:
+            if on_click:
+                for event in pygame.event.get():
+                    if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                        #  move
+                        xnew = player1.tank.proj_x + speed
+                        angle = get_slope_radians(xnew)
+                        if xnew >= play_w:  # or (angle >= math.pi / 4):
+                            done = True
+                            break
+                        center = get_tank_center(xnew, angle)
+                        player1.tank.move_by_center(screen, center, xnew, angle)
+                        pygame.display.update()
+                        # time.sleep(500000)'''
+                        pygame.event.clear()
+                        clock.tick(60)
+            else:
+                #  move
+                xnew = player1.tank.proj_x + speed
+                angle = get_slope_radians(xnew)
+                if xnew >= play_w:  # or (angle >= math.pi / 4):
+                    done = True
+                    break
+                center = get_tank_center(xnew, angle)
+                player1.tank.move_by_center(screen, center, xnew, angle)
+                pygame.display.update()
+                # time.sleep(500000)'''
+                pygame.event.clear()
+                clock.tick(60)
 
