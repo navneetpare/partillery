@@ -2,18 +2,75 @@
 
 import math
 import os
-import pygame
 import random
 import sys
-import numpy as np
-import time
+from time import sleep
+import pygame
 
 from partillery.ammo import Ammo
 from partillery.controls import ControlPanel
-from partillery.crosshair import CrossHair
 from partillery.player import Player
-from partillery.tank import Tank, update_turret
+from partillery.tank import Tank
 from partillery.terrain import Terrain
+
+
+# Library Initialization
+pygame.init()
+clock = pygame.time.Clock()
+
+# Game Modes
+
+MODE_SELECTION = "Selection"
+MODE_FLIGHT = "Flight"
+MODE_TEST = "Test"
+mode = MODE_SELECTION
+
+# Colors
+
+col_black = 0, 0, 0
+col_text = 200, 200, 200
+col_screen = 10, 10, 10
+col_grey = 25, 25, 25
+col_night = 10, 10, 10
+col_terrain = 0, 130, 50
+col_day = 207, 245, 254
+col_eve = 0, 30, 70
+
+# Dimensions
+
+full_w = 1600
+full_h = 900
+play_w = full_w
+play_h = int(full_h * 0.8)
+play_left = (full_w - play_w) / 2
+play_right = play_left + play_w
+# play_top = (full_h - play_h) / 2
+play_top = 0
+play_bottom = play_top + play_h
+terrain_h = round(play_h * 0.2)
+control_h = full_h - play_h
+control_scale = 15  # for my ctrl images; set from tests
+tank_h = 16
+tank_w = 32
+tank_x = play_left
+tank_y = play_top + play_h - tank_h - terrain_h
+ammo_h = 4
+
+# Players
+
+player1 = Player()
+player2 = Player()
+player1.angle = 60
+player1.power = 50
+player2.angle = 120
+player2.power = 50
+player = player1
+enemy = player2
+
+# Ammo physics
+
+g = 500
+speed_base = 1000
 
 
 # ---------------------  UTIL FUNCTIONS  --------------------- #
@@ -35,11 +92,11 @@ def clamp(n, min_n, max_n):
 
 def get_slope_radians(x):
     # slope = (y2 - y1) / (x2 - x1)
-    m = - (terr.points[1][x + 1] - terr.points[1][x]) / (terr.points[0][x + 1] - terr.points[0][x])
+    m = - (terr.points[x + 1] - terr.points[x])  # ignore div by x2 - x1 which is always 1
     return math.atan(m)
 
 
-def get_resting_slope_right(x):
+'''def get_resting_slope_right(x):
     # for right hemisphere of r = tank_w, find point with max slope with respect to the given x on the terrain
     m = 0
     i_max = None
@@ -64,11 +121,11 @@ def get_avg_slope_radians_right(x):
             d_max = d
             x1 = x + i
     m = -(terr.points[1][x1 - 1] - terr.points[1][x - 1]) / (terr.points[0][x1 - 1] - terr.points[0][x - 1])
-    return math.atan(m)
+    return math.atan(m)'''
 
 
 def get_tank_center(x, angle):
-    y = terr.points[1][x - 1]
+    y = terr.points[x - 1]
     x1 = int(tank_h / 2 * math.cos(angle + math.pi / 2) + x)
     y1 = int(-(tank_h / 2) * math.sin(angle + math.pi / 2) + y)
     return x1, y1
@@ -76,64 +133,6 @@ def get_tank_center(x, angle):
 
 # ------------------------------------------------------------ #
 
-
-# Library Initialization
-pygame.init()
-clock = pygame.time.Clock()
-
-# Game Modes
-
-MODE_SELECTION = "Selection"
-MODE_FLIGHT = "Flight"
-MODE_TEST = "Test"
-mode = MODE_TEST
-
-# Colors
-
-col_black = 0, 0, 0
-col_text = 200, 200, 200
-col_screen = 10, 10, 10
-col_grey = 25, 25, 25
-col_night = 10, 10, 10
-col_terrain = 0, 130, 50
-col_day = 207, 245, 254
-col_eve = 0, 30, 70
-
-# Dimensions
-
-full_w = 1280
-full_h = 720
-play_w = full_w
-play_h = round(full_h * 0.8)
-play_left = (full_w - play_w) / 2
-play_right = play_left + play_w
-# play_top = (full_h - play_h) / 2
-play_top = 0
-play_bottom = play_top + play_h
-terrain_h = round(play_h * 0.2)
-control_h = full_h - play_h
-control_scale = 15  # for my ctrl images; set from tests
-tank_h = 16
-tank_w = 32
-tank_x = play_left
-tank_y = play_top + play_h - tank_h - terrain_h
-ammo_h = 4
-
-# Players
-
-player1 = Player()
-player2 = Player()
-player1.angle = 60
-player1.power = 50
-player2.angle = 120
-player2.power = 50
-curr_player = player1
-enemy = player2
-
-# Ammo physics
-
-g = 500
-speed_base = 1000
 
 # Initialize Display Elements
 
@@ -152,10 +151,9 @@ screen.blit(playsurf, (play_left, play_top))
 # ---------------------  Draw initial elements  --------------------- #
 
 cpl = ControlPanel(screen, play_left, play_bottom, play_w, full_h - play_h, control_scale)
-terr = Terrain(screen, play_w, play_h, 'Hill')
-# get_slope(1)
+terr = Terrain(screen, play_w, play_h, 'Cliff')
 tank1_x = random.randint(play_left, ((play_right - play_left) / 2) - tank_w)  # random x location
-tank1_x = 32
+# tank1_x = 32
 tank1_slope_radians = get_slope_radians(tank1_x)  # slope angle on terrain curve
 tank1_center = get_tank_center(tank1_x, tank1_slope_radians)  # new center
 
@@ -163,15 +161,8 @@ tank2_x = random.randint(((play_right - play_left) / 2), play_right - tank_w)
 tank2_slope_radians = get_slope_radians(tank2_x)
 tank2_center = get_tank_center(tank2_x, tank2_slope_radians)
 
-player1.tank = Tank(screen, 'red', 'right', tank1_x, tank1_center, tank1_slope_radians, player1.angle)
-# player2.tank = Tank(screen, "red", "left", tank2_center, tank2_slope_radians, player2.angle)
-
-# screen.blit(terr.surf, (0, 0))
-
-# player1.tank.move(screen, 5, terr.points[1][4] + tank_h, 37, terr.points[1][36]+tank_h)
-
-# crosshair = CrossHair(screen, play_left, play_top, curr_player.tank.rect.midtop, curr_player.angle,
-# int(curr_player.tank.rect.w * 1.5))
+player1.tank = Tank(screen, playsurf_rect, 'red', tank1_x, tank1_center, tank1_slope_radians, player1.angle)
+player2.tank = Tank(screen, playsurf_rect, "blue", tank2_x, tank2_center, tank2_slope_radians, player2.angle)
 
 pygame.display.update()
 
@@ -189,6 +180,8 @@ while True:
 
     while mode == MODE_SELECTION:
 
+        player.tank.crosshair.show(screen)
+
         for event in pygame.event.get():
 
             if event.type == pygame.QUIT:
@@ -202,44 +195,45 @@ while True:
 
                 # FIRE
                 if cpl.fire.collidepoint(event.pos):
+                    player.tank.crosshair.hide(screen)
                     mode = MODE_FLIGHT
                     # init ammo
-                    ammo_x0 = curr_player.tank.turret.nose[0]
-                    ammo_y0 = curr_player.tank.turret.nose[1]
-                    ammo = Ammo(screen, play_left, play_top, ammo_x0, ammo_y0)
-                    speed_start = speed_base * curr_player.power / 100
-                    ammo_speed_x0 = speed_start * math.cos(math.radians(curr_player.angle))
-                    ammo_speed_y0 = -(speed_start * math.sin(math.radians(curr_player.angle)))
+                    ammo_x0 = player.tank.turret_nose[0]
+                    ammo_y0 = player.tank.turret_nose[1]
+                    ammo = Ammo(screen, ammo_x0, ammo_y0)
+                    speed_start = speed_base * player.power / 100
+                    ammo_speed_x0 = speed_start * math.cos(math.radians(player.angle))
+                    ammo_speed_y0 = -(speed_start * math.sin(math.radians(player.angle)))
                     # timer reset
                     t0 = pygame.time.get_ticks()
 
                 # ANGLE LEFT
                 if cpl.angle_inc.collidepoint(event.pos):
-                    curr_player.angle += 1
-                    if curr_player.angle == 360:
-                        curr_player.angle = 0
-                    cpl.update_angle(screen, curr_player.angle)
-                    crosshair.update(screen, playsurf_rect, play_left, play_top, curr_player.angle)
-                    update_turret(screen, curr_player.tank, curr_player.angle)
+                    player.angle += 1
+                    if player.angle == 360:
+                        player.angle = 0
+                    cpl.update_angle(screen, player.angle)
+                    player.tank.crosshair.update(screen, playsurf_rect, player.angle)
+                    player.tank.update_turret(screen, player.angle, False)
 
                 # ANGLE RIGHT
                 if cpl.angle_dec.collidepoint(event.pos):
-                    curr_player.angle -= 1
-                    if curr_player.angle < 0:
-                        curr_player.angle = 359
-                    cpl.update_angle(screen, curr_player.angle)
-                    crosshair.update(screen, playsurf_rect, play_left, play_top, curr_player.angle)
-                    update_turret(screen, curr_player.tank, curr_player.angle)
+                    player.angle -= 1
+                    if player.angle < 0:
+                        player.angle = 359
+                    cpl.update_angle(screen, player.angle)
+                    player.tank.crosshair.update(screen, playsurf_rect, player.angle)
+                    player.tank.update_turret(screen, player.angle, False)
 
                 # POWER DECREMENT
                 if cpl.power_dec.collidepoint(event.pos):
-                    curr_player.power = max(curr_player.power - 1, 0)
-                    cpl.update_power(screen, curr_player.power)
+                    player.power = max(player.power - 1, 0)
+                    cpl.update_power(screen, player.power)
 
                 # POWER INCREMENT
                 if cpl.power_inc.collidepoint(event.pos):
-                    curr_player.power = min(curr_player.power + 1, 100)
-                    cpl.update_power(screen, curr_player.power)
+                    player.power = min(player.power + 1, 100)
+                    cpl.update_power(screen, player.power)
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
 
@@ -252,8 +246,8 @@ while True:
                     pygame.mouse.set_visible(False)
                     pygame.mouse.set_pos((cpl.power_bar_fill_rect.right + 1, cpl.power_bar_fill_rect.top))
                     looping = True
-
                     while looping:
+                        sleep(0.005)
                         event_list = pygame.event.get(pygame.MOUSEBUTTONUP)
                         for e in event_list:
                             if e.button == 1:
@@ -262,8 +256,8 @@ while True:
 
                         pos_x = pygame.mouse.get_pos()[0]
                         val = int((clamp(pos_x, min_x, max_x) - min_x) * 100 / w)
-                        curr_player.power = val
-                        cpl.update_power(screen, curr_player.power)
+                        player.power = val
+                        cpl.update_power(screen, player.power)
 
                         pygame.display.update()
                         clock.tick(60)
@@ -274,7 +268,7 @@ while True:
                     # we move the turret / angle based on mouse x movement rather than x,y movement - that's not
                     # intuitive
                     saved_pos = pygame.mouse.get_pos()
-                    initial_angle = curr_player.angle
+                    initial_angle = player.angle
                     pygame.mouse.set_pos(playsurf_rect.center)
                     pos1 = saved_pos[0]
                     pygame.mouse.set_visible(False)
@@ -282,17 +276,18 @@ while True:
                     looping = True
 
                     while looping:
+                        sleep(0.005)
                         pos2 = pygame.mouse.get_pos()[0]
-                        curr_player.angle = int((pos1 - pos2) / 2) + initial_angle
+                        player.angle = int((pos1 - pos2) / 2) + initial_angle
 
-                        if curr_player.angle < 0:
-                            curr_player.angle = 359
-                        if curr_player.angle > 359:
-                            curr_player.angle = 0
+                        if player.angle < 0:
+                            player.angle = 359
+                        if player.angle > 359:
+                            player.angle = 0
 
-                        cpl.update_angle(screen, curr_player.angle)
-                        update_turret(screen, curr_player.tank, curr_player.angle)
-                        crosshair.update(screen, playsurf_rect, play_left, play_top, curr_player.angle)
+                        cpl.update_angle(screen, player.angle)
+                        player.tank.update_turret(screen, player.angle, False)
+                        player.tank.crosshair.update(screen, playsurf_rect, player.angle)
 
                         event_list = pygame.event.get(pygame.MOUSEBUTTONUP)
                         for e in event_list:
@@ -323,23 +318,21 @@ while True:
         ammo_new_y = round(((ammo_speed_y0 * t) + (0.5 * g * t ** 2)) + ammo_y0)
 
         # move and check
-        if not (ammo.go(screen, playsurf_rect, play_left, play_top, terr.rect, enemy.tank.rect, ammo_new_x,
+        if not (ammo.go(screen, playsurf_rect, terr.mask, enemy.tank.mask, ammo_new_x,
                         ammo_new_y)):
             mode = MODE_SELECTION
             del ammo
             # change player
-            if curr_player == player1:
-                curr_player = player2
+            if player == player1:
+                player = player2
+                enemy = player1
             else:
-                curr_player = player1
+                player = player1
+                enemy = player2
 
-            cpl.update_angle(screen, curr_player.angle)
-            cpl.update_power(screen, curr_player.power)
+            cpl.update_angle(screen, player.angle)
+            cpl.update_power(screen, player.power)
 
-            crosshair.erase(screen)
-            del crosshair
-            crosshair = CrossHair(screen, play_left, play_top, curr_player.tank.rect.midtop, curr_player.angle,
-                                  int(curr_player.tank.rect.w * 1.5))
             break
 
         pygame.display.update()
@@ -348,7 +341,7 @@ while True:
     while mode == MODE_TEST:
         xnew = tank1_x
         done = False
-        speed = 2
+        speed = 1
         on_click = False
         while not done and xnew < play_w - 75:
             if on_click:
@@ -361,7 +354,7 @@ while True:
                             done = True
                             break
                         center = get_tank_center(xnew, angle)
-                        player1.tank.move_by_center(screen, center, xnew, angle)
+                        player1.tank.go(screen, center, xnew, angle)
                         pygame.display.update()
                         # time.sleep(500000)'''
                         pygame.event.clear()
@@ -374,9 +367,10 @@ while True:
                     done = True
                     break
                 center = get_tank_center(xnew, angle)
-                player1.tank.move_by_center(screen, center, xnew, angle)
+                player1.tank.go(screen, center, xnew, angle)
                 pygame.display.update()
                 # time.sleep(500000)'''
                 pygame.event.clear()
                 clock.tick(60)
+
 

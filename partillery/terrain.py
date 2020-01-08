@@ -8,7 +8,7 @@ import random
 import numpy as np
 from scipy import interpolate
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 # Colours
 
@@ -19,11 +19,11 @@ g4 = 0, 90, 0, 255  # green opaque
 g5 = 0, 60, 0, 255  # green opaque
 
 # --- awesome palette
-teal = 56,104,80
-b1 = 240,192,160
-b2 = 152,112,80
+teal = 56, 104, 80
+b1 = 240, 192, 160
+b2 = 152, 112, 80
 b3 = 112, 80, 48
-b4 = 56,16,0
+b4 = 56, 16, 0
 
 # Coefficients for the main noise generator
 a = [15731, 16703, 23143, 19843, 12744, 97586, 36178, 88412, 78436, 78436, 96653, 12598, 32158, 98764, 11579, 65989,
@@ -74,7 +74,7 @@ def interpolated_noise(x: float, i: int):
 def perlin_noise(x: float):
     total = 0
     p = 1.5  # persistence
-    n = 16  # Number_Of_Octaves - 1
+    n = 0  # Number_Of_Octaves - 1
     for i in range(1, n):
         frequency = 2 * i
         amplitude = p * i
@@ -159,7 +159,7 @@ def generate(w, h, terrain_type):
     x0 = macro_terrain_points[0]
     y0 = macro_terrain_points[1]
 
-    x_arr = np.arange(1, 1281, 1)
+    x_arr = np.arange(1, w + 1, 1)
     fun = interpolate.interp1d(x0, y0, interpolation_type)
     y_base = fun(x_arr)
     perlin_vec = np.vectorize(perlin_noise)
@@ -167,7 +167,7 @@ def generate(w, h, terrain_type):
     y_arr = y_base + y_perlin
     y_arr.round()
 
-    return [x_arr, y_arr]
+    return y_arr  # only need the y coords; x is implicit as array index - 1
 
     # Debug only
     # plt.plot(x0, y0, 'o', x_arr, y_arr, '-')
@@ -176,17 +176,21 @@ def generate(w, h, terrain_type):
     # plt.show()
 
 
+def mask_tiles(play_w, play_h):
+    np.array()
+
+
 class Terrain:
     def __init__(self, screen, play_w, play_h, terrain_type):
         # Create a layer for terrain, with per-pixel alpha allowed
         # Self surf will be blitted onto the screen later
         self.surf = pygame.Surface((play_w, play_h), pygame.SRCALPHA)
         self.points = generate(play_w, play_h, terrain_type)
-
         self.mask = None
 
-        x = np.array(self.points[0])
-        y = np.array(self.points[1])
+        x = np.arange(1, play_w + 1, 1)  # just temp
+        y = np.array(self.points)  # for fast numpy methods
+
         green_val = 255
         # Top crust
         for i in range(1, 3):
@@ -215,6 +219,8 @@ class Terrain:
             y += 1
             y.clip(0, play_h)
 
+        # get mask after drawing complete
+        self.mask = pygame.mask.from_surface(self.surf, 254)
+
         # Blit terrain surf onto screen
         screen.blit(self.surf, (0, 0))
-        self.mask = pygame.mask.from_surface(self.surf, 254)

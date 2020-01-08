@@ -3,8 +3,9 @@ import pygame
 
 class Ammo(pygame.sprite.Sprite):
     def __init__(self, screen, ammo_x0, ammo_y0):
-        super(Ammo, self).__init__
+        super(Ammo, self).__init__()
         self.surf = pygame.image.load("../resources/images/ammo_4.gif")
+        self.mask = pygame.mask.from_surface(self.surf)
         self.rect = self.surf.get_rect()
         self.rect.x = ammo_x0
         self.rect.y = ammo_y0
@@ -12,16 +13,18 @@ class Ammo(pygame.sprite.Sprite):
         self.h = self.rect.h
         self.prev_pos = ammo_x0, ammo_y0
         self.eraser = get_eraser(screen, ammo_x0, ammo_y0, self.w, self.h)
+        self.mask = pygame.mask.from_surface(self.surf)
         screen.blit(self.surf, self.rect)
 
-    def go(self, screen, playsurf_rect, play_left, play_top, terr_rect, tank2_rect, x, y):
+    def go(self, screen, playsurf_rect, terr_mask, enemy_tank_mask, x, y):
 
         alive = True
         new_rect = pygame.Rect(x, y, self.w, self.h)
         new_rect_inside = playsurf_rect.contains(new_rect)
         old_rect_inside = playsurf_rect.contains(self.rect)
-        collides = new_rect.colliderect(terr_rect) or new_rect.colliderect(tank2_rect)
+        collides = new_rect.colliderect(terr_mask) or new_rect.colliderect(enemy_tank_mask)
 
+        terr_mask.overlap_area()
         if (x > playsurf_rect.right) or (x + self.w < playsurf_rect.left) or collides:
             alive = False
 
