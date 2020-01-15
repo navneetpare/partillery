@@ -23,7 +23,7 @@ clock = pygame.time.Clock()
 MODE_SELECTION = "Selection"
 MODE_FLIGHT = "Flight"
 MODE_TEST = "Test"
-mode = MODE_SELECTION
+mode = MODE_TEST
 
 # Colors
 
@@ -96,34 +96,6 @@ def get_slope_radians(x):
     return math.atan(m)
 
 
-'''def get_resting_slope_right(x):
-    # for right hemisphere of r = tank_w, find point with max slope with respect to the given x on the terrain
-    m = 0
-    i_max = None
-    for i in range(1, tank_w):
-        mtemp = - (terr.points[1][x + 1] - terr.points[1][x]) / (terr.points[0][x + 1] - terr.points[0][x])
-        if mtemp >= m:
-            m = mtemp
-            i_max = i
-    return math.atan(m)
-
-
-def get_avg_slope_radians_right(x):
-    # for right hemisphere of r = tank_w, find point with max slope with respect to the given x on the terrain
-    d_max = 0
-    x1 = None
-    for i in range(tank_w - 1, 0, -1):
-        # d = sqrt((y2-y1)^2 + (x2-x1)^2)
-        d = math.sqrt(
-            (terr.points[1][x + i - 1] - terr.points[1][x - 1]) ** 2 + (
-                        terr.points[0][x + i - 1] - terr.points[0][x - 1]) ** 2)
-        if tank_w >= d > d_max:
-            d_max = d
-            x1 = x + i
-    m = -(terr.points[1][x1 - 1] - terr.points[1][x - 1]) / (terr.points[0][x1 - 1] - terr.points[0][x - 1])
-    return math.atan(m)'''
-
-
 def get_tank_center(x, angle):
     y = terr.points[x - 1]
     x1 = int(tank_h / 2 * math.cos(angle + math.pi / 2) + x)
@@ -137,11 +109,11 @@ def get_tank_center(x, angle):
 # Initialize Display Elements
 
 pygame.display.set_caption("Partillery")
-pygame.display.set_icon(pygame.image.load("../resources/images/window_icon.png"))
+pygame.display.set_icon(pygame.image.load("resources/images/window_icon.png"))
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (100, 40)
 screen = pygame.display.set_mode((full_w, full_h), pygame.RESIZABLE)
 screen.fill(col_screen)
-play_img = pygame.image.load("../resources/images/nighthd_starry.png").convert()
+play_img = pygame.image.load("resources/images/nighthd_starry.png").convert()
 playsurf = pygame.transform.scale(play_img, (play_w, play_h))
 playsurf_rect = playsurf.get_rect()
 playsurf_rect.x = play_left

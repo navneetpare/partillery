@@ -14,7 +14,7 @@ default_power_val = 50
 class ControlPanel:
     def __init__(self, screen: pygame.Surface, cpl_x, cpl_y, cpl_w, cpl_h, control_scale):
 
-        control_img = pygame.image.load("../resources/images/control_panel.png").convert()
+        control_img = pygame.image.load("resources/images/control_panel.png").convert()
         self.surf = pygame.transform.scale(control_img, (cpl_w, cpl_h))
         self.rect = self.surf.get_rect()
         self.rect.x = cpl_x
@@ -42,17 +42,17 @@ class ControlPanel:
 
         # create surfaces
 
-        wp_img = pygame.image.load("../resources/images/wp_list.png")
-        angle_img = pygame.image.load("../resources/images/param_window.png")
-        angle_dec_img = pygame.image.load("../resources/images/inc_button.png")
-        angle_inc_img = pygame.image.load("../resources/images/dec_button.png")
-        power_img = pygame.image.load("../resources/images/param_window.png")
-        power_bar_img = pygame.image.load("../resources/images/power_bar.png")
-        power_inc_img = pygame.image.load("../resources/images/inc_button.png")
-        power_dec_img = pygame.image.load("../resources/images/dec_button.png")
-        fire_img = pygame.image.load("../resources/images/param_window.png")
-        fire_text_img = pygame.image.load("../resources/images/fire_text.png")
-        scoreboard_frame = pygame.image.load("../resources/images/scoreboard_frame.png")
+        wp_img = pygame.image.load("resources/images/wp_list.png")
+        angle_img = pygame.image.load("resources/images/param_window.png")
+        angle_dec_img = pygame.image.load("resources/images/inc_button.png")
+        angle_inc_img = pygame.image.load("resources/images/dec_button.png")
+        power_img = pygame.image.load("resources/images/param_window.png")
+        power_bar_img = pygame.image.load("resources/images/power_bar.png")
+        power_inc_img = pygame.image.load("resources/images/inc_button.png")
+        power_dec_img = pygame.image.load("resources/images/dec_button.png")
+        fire_img = pygame.image.load("resources/images/param_window.png")
+        fire_text_img = pygame.image.load("resources/images/fire_text.png")
+        scoreboard_frame = pygame.image.load("resources/images/scoreboard_frame.png")
 
         # scale surfaces
 
@@ -137,9 +137,9 @@ class ControlPanel:
 
         # display text
         # self.font_param = pygame.font.SysFont("segoeui", 13, True)
-        self.font_param = pygame.font.Font("../resources/fonts/expressway.ttf", 13)
+        self.font_param = pygame.font.Font("resources/fonts/expressway.ttf", 13)
         # self.font_heading = pygame.font.SysFont("comicsansms", 16, True)
-        self.font_heading = pygame.font.Font("../resources/fonts/expressway.ttf", 15)
+        self.font_heading = pygame.font.Font("resources/fonts/expressway.ttf", 15)
 
         self.angle_text = self.font_param.render(str(default_angle_val), True, col_text_white, col_screen)
         self.angle_text_rect = self.angle_text.get_rect()

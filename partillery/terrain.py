@@ -74,7 +74,7 @@ def interpolated_noise(x: float, i: int):
 def perlin_noise(x: float):
     total = 0
     p = 1.5  # persistence
-    n = 0  # Number_Of_Octaves - 1
+    n = 14  # Number_Of_Octaves - 1
     for i in range(1, n):
         frequency = 2 * i
         amplitude = p * i
