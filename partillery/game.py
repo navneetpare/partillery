@@ -38,8 +38,8 @@ col_eve = 0, 30, 70
 
 # Dimensions
 
-full_w = 1600
-full_h = 900
+full_w = 1280
+full_h = 720
 play_w = full_w
 play_h = int(full_h * 0.8)
 play_left = (full_w - play_w) / 2
@@ -111,7 +111,7 @@ def get_tank_center(x, angle):
 pygame.display.set_caption("Partillery")
 pygame.display.set_icon(pygame.image.load("resources/images/window_icon.png"))
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (100, 40)
-screen = pygame.display.set_mode((full_w, full_h), pygame.RESIZABLE)
+screen = pygame.display.set_mode((full_w, full_h), pygame.FULLSCREEN)
 screen.fill(col_screen)
 play_img = pygame.image.load("resources/images/nighthd_starry.png").convert()
 playsurf = pygame.transform.scale(play_img, (play_w, play_h))
