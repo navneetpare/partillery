@@ -2,6 +2,8 @@
 # Drawing vertical segments does not account for slope.
 # http://geomalgorithms.com/a13-_intersect-4.html
 
+# 11/04/2020 - Divide the terrain vertically into slats. Each will have its own mask.
+
 import pygame
 import math
 import random
@@ -165,8 +167,7 @@ def generate(w, h, terrain_type):
     perlin_vec = np.vectorize(perlin_noise)
     y_perlin = perlin_vec(x_arr)
     y_arr = y_base + y_perlin
-    y_arr.round()
-
+    y_arr = y_arr.astype(int, 'K', 'unsafe', True, True)
     return y_arr  # only need the y coords; x is implicit as array index - 1
 
     # Debug only
@@ -185,11 +186,12 @@ class Terrain:
         # Create a layer for terrain, with per-pixel alpha allowed
         # Self surf will be blitted onto the screen later
         self.surf = pygame.Surface((play_w, play_h), pygame.SRCALPHA)
-        self.points = generate(play_w, play_h, terrain_type)
-        self.mask = None
-
+        self.ypoints = generate(play_w, play_h, terrain_type) # only y coords
         x = np.arange(1, play_w + 1, 1)  # just temp
-        y = np.array(self.points)  # for fast numpy methods
+        self.points= np.column_stack((x, self.ypoints))
+
+        # temp y array which will be moved dowwards for painting layers of terrain
+        y = np.array(self.ypoints)  # for fast numpy methods
 
         green_val = 255
         # Top crust
@@ -213,7 +215,7 @@ class Terrain:
         for i in range(4, play_h):
             m = np.column_stack((x, y))
             # pygame.draw.lines(self.surf, (0, green_val // 3.5, 0, 255), False, m)
-            pygame.draw.lines(self.surf, (170, 170, 170, 255), False, m)
+            pygame.draw.lines(self.surf, (150, 150, 150, 255), False, m)
             # pygame.draw.lines(self.surf, b4, False, m)
             green_val -= 0.3
             y += 1

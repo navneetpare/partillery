@@ -23,7 +23,7 @@ clock = pygame.time.Clock()
 MODE_SELECTION = "Selection"
 MODE_FLIGHT = "Flight"
 MODE_TEST = "Test"
-mode = MODE_TEST
+mode = MODE_SELECTION
 
 # Colors
 
@@ -92,12 +92,12 @@ def clamp(n, min_n, max_n):
 
 def get_slope_radians(x):
     # slope = (y2 - y1) / (x2 - x1)
-    m = - (terr.points[x + 1] - terr.points[x])  # ignore div by x2 - x1 which is always 1
+    m = - (terr.ypoints[x + 1] - terr.ypoints[x])  # ignore div by x2 - x1 which is always 1
     return math.atan(m)
 
 
 def get_tank_center(x, angle):
-    y = terr.points[x - 1]
+    y = terr.ypoints[x - 1]
     x1 = int(tank_h / 2 * math.cos(angle + math.pi / 2) + x)
     y1 = int(-(tank_h / 2) * math.sin(angle + math.pi / 2) + y)
     return x1, y1
@@ -111,7 +111,7 @@ def get_tank_center(x, angle):
 pygame.display.set_caption("Partillery")
 pygame.display.set_icon(pygame.image.load("resources/images/window_icon.png"))
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (100, 40)
-screen = pygame.display.set_mode((full_w, full_h), pygame.FULLSCREEN)
+screen = pygame.display.set_mode((full_w, full_h), pygame.RESIZABLE)
 screen.fill(col_screen)
 play_img = pygame.image.load("resources/images/nighthd_starry.png").convert()
 playsurf = pygame.transform.scale(play_img, (play_w, play_h))
@@ -290,7 +290,7 @@ while True:
         ammo_new_y = round(((ammo_speed_y0 * t) + (0.5 * g * t ** 2)) + ammo_y0)
 
         # move and check
-        if not (ammo.go(screen, playsurf_rect, terr.mask, enemy.tank.mask, ammo_new_x,
+        if not (ammo.go(screen, playsurf_rect, terr.points, enemy.tank, ammo_new_x,
                         ammo_new_y)):
             mode = MODE_SELECTION
             del ammo
