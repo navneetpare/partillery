@@ -177,18 +177,14 @@ def generate(w, h, terrain_type):
     # plt.show()
 
 
-def mask_tiles(play_w, play_h):
-    np.array()
-
-
 class Terrain:
     def __init__(self, screen, play_w, play_h, terrain_type):
         # Create a layer for terrain, with per-pixel alpha allowed
         # Self surf will be blitted onto the screen later
         self.surf = pygame.Surface((play_w, play_h), pygame.SRCALPHA)
-        self.ypoints = generate(play_w, play_h, terrain_type) # only y coords
+        self.ypoints = generate(play_w, play_h, terrain_type)  # only y coords
         x = np.arange(1, play_w + 1, 1)  # just temp
-        self.points= np.column_stack((x, self.ypoints))
+        self.points = np.column_stack((x, self.ypoints))
 
         # temp y array which will be moved dowwards for painting layers of terrain
         y = np.array(self.ypoints)  # for fast numpy methods

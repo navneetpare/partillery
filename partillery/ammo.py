@@ -21,7 +21,7 @@ class Ammo(pygame.sprite.Sprite):
         # this is based on above mask - assume static mask since plain ammo is spherical
         screen.blit(self.surf, self.rect)
 
-    def go(self, screen, playsurf_rect, terr_points, enemy_tank, x, y):
+    def go(self, screen, playsurf_rect, terrain_mask, enemy_tank, x, y):
 
         alive = True
         new_rect = pygame.Rect(x, y, self.w, self.h)
@@ -47,10 +47,15 @@ class Ammo(pygame.sprite.Sprite):
         else:
             # offset the mask outline by new ammo coordinates to get actual outline
             # this is done using numpy array broadcast addition ; a temp array np.array([x,y]) is created on the fly
-            new_outline = self.outline + np.array([x, y])
-            print(new_outline)
-            print(terr_points)
-            if not set(map(tuple, new_outline)).isdisjoint(set(map(tuple, terr_points))):
+            # new_outline = self.outline + np.array([x, y])
+            # print(new_outline)
+            # print(terr_points)
+            # if not set(map(tuple, new_outline)).isdisjoint(set(map(tuple, terr_points))):
+
+            # above method is inaccurate
+            # use terrain mask instead; sometimes ammo flies across without intersecting
+            offset = (x, y)
+            if terrain_mask.overlap(self.mask, offset):
                 collides = True
 
         if new_rect_inside and not collides:

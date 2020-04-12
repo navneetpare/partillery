@@ -123,7 +123,7 @@ screen.blit(playsurf, (play_left, play_top))
 # ---------------------  Draw initial elements  --------------------- #
 
 cpl = ControlPanel(screen, play_left, play_bottom, play_w, full_h - play_h, control_scale)
-terr = Terrain(screen, play_w, play_h, 'Cliff')
+terr = Terrain(screen, play_w, play_h, 'Random')
 tank1_x = random.randint(play_left, ((play_right - play_left) / 2) - tank_w)  # random x location
 # tank1_x = 32
 tank1_slope_radians = get_slope_radians(tank1_x)  # slope angle on terrain curve
@@ -290,7 +290,7 @@ while True:
         ammo_new_y = round(((ammo_speed_y0 * t) + (0.5 * g * t ** 2)) + ammo_y0)
 
         # move and check
-        if not (ammo.go(screen, playsurf_rect, terr.points, enemy.tank, ammo_new_x,
+        if not (ammo.go(screen, playsurf_rect, terr.mask, enemy.tank, ammo_new_x,
                         ammo_new_y)):
             mode = MODE_SELECTION
             del ammo
