@@ -27,6 +27,8 @@ b2 = 152, 112, 80
 b3 = 112, 80, 48
 b4 = 56, 16, 0
 
+d1_for_purple = 21,21,21
+
 # Coefficients for the main noise generator
 a = [15731, 16703, 23143, 19843, 12744, 97586, 36178, 88412, 78436, 78436, 96653, 12598, 32158, 98764, 11579, 65989,
      13647, 36987, 16467, 16798]
@@ -193,7 +195,7 @@ class Terrain:
         # Top crust
         for i in range(1, 3):
             m = np.column_stack((x, y))
-            # pygame.draw.lines(self.surf, g1, False, m)
+            # pygame.draw.lines(self.surf, b1, False, m)
             pygame.draw.lines(self.surf, (170, 170, 170), False, m)
             y += 1
             y.clip(0, play_h)
@@ -210,7 +212,7 @@ class Terrain:
         # Body gradient
         for i in range(4, play_h):
             m = np.column_stack((x, y))
-            # pygame.draw.lines(self.surf, (0, green_val // 3.5, 0, 255), False, m)
+            # pygame.draw.lines(self.surf, b4, False, m)
             pygame.draw.lines(self.surf, (150, 150, 150, 255), False, m)
             # pygame.draw.lines(self.surf, b4, False, m)
             green_val -= 0.3
@@ -219,6 +221,6 @@ class Terrain:
 
         # get mask after drawing complete
         self.mask = pygame.mask.from_surface(self.surf, 254)
-
         # Blit terrain surf onto screen
         screen.blit(self.surf, (0, 0))
+

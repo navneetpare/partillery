@@ -12,6 +12,7 @@ from partillery.controls import ControlPanel
 from partillery.player import Player
 from partillery.tank import Tank
 from partillery.terrain import Terrain
+from partillery.explosion import Explosion
 
 
 # Library Initialization
@@ -113,8 +114,9 @@ pygame.display.set_icon(pygame.image.load("resources/images/window_icon.png"))
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (100, 40)
 screen = pygame.display.set_mode((full_w, full_h), pygame.RESIZABLE)
 screen.fill(col_screen)
-play_img = pygame.image.load("resources/images/nighthd_starry.png").convert()
+play_img = pygame.image.load("resources/images/nighthd_starry_blue.png").convert_alpha()
 playsurf = pygame.transform.scale(play_img, (play_w, play_h))
+playsurf_bk = playsurf.copy()
 playsurf_rect = playsurf.get_rect()
 playsurf_rect.x = play_left
 playsurf_rect.y = play_top
@@ -123,7 +125,10 @@ screen.blit(playsurf, (play_left, play_top))
 # ---------------------  Draw initial elements  --------------------- #
 
 cpl = ControlPanel(screen, play_left, play_bottom, play_w, full_h - play_h, control_scale)
+
+n1 = pygame.time.get_ticks()
 terr = Terrain(screen, play_w, play_h, 'Random')
+
 tank1_x = random.randint(play_left, ((play_right - play_left) / 2) - tank_w)  # random x location
 # tank1_x = 32
 tank1_slope_radians = get_slope_radians(tank1_x)  # slope angle on terrain curve
@@ -292,6 +297,7 @@ while True:
         # move and check
         if not (ammo.go(screen, playsurf_rect, terr.mask, enemy.tank, ammo_new_x,
                         ammo_new_y)):
+            Explosion(screen, playsurf_bk, ammo.rect.center, 100, None)
             mode = MODE_SELECTION
             del ammo
             # change player
