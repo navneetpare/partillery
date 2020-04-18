@@ -1,1 +1,16 @@
-grab combo eraser for tank whenever movement stops
+Issues
+----------
+
+1) When tank moves - the turret must be deleted before moving
+2) Random init location of tank - must not fall outside or intersect with play window
+3) Explosion, deletes tank too.
+4) Explosion may partially fall outside the window - gives a rect error
+6) grab combo eraser for tank whenever movement stops
+
+Pending features
+----------
+1) Explosion animation types
+2) Ammo types
+3) Tank move at will
+4) Tank fall after explosion
+5) Terrain fall after explosion
