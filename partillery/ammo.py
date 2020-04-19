@@ -1,4 +1,5 @@
 import pygame
+from partillery.explosion import Explosion
 import numpy as np
 
 
@@ -21,12 +22,13 @@ class Ammo(pygame.sprite.Sprite):
         # this is based on above mask - assume static mask since plain ammo is spherical
         screen.blit(self.surf, self.rect)
 
-    def go(self, screen, playsurf_rect, terrain_mask, enemy_tank, x, y):
+    def go(self, screen, playsurf_bk, playsurf_rect, play_h, terrain_mask, enemy_tank, x, y):
 
         alive = True
         new_rect = pygame.Rect(x, y, self.w, self.h)
         new_rect_inside = playsurf_rect.contains(new_rect)
         old_rect_inside = playsurf_rect.contains(self.rect)
+        offset = (x, y)
         # collides = new_rect.colliderect(terr_mask) or new_rect.colliderect(enemy_tank_mask)
 
         if old_rect_inside:
@@ -40,28 +42,17 @@ class Ammo(pygame.sprite.Sprite):
         # -- we'll check enemy first and if yes, we'll skip terrain check as that is expensive
         collides = False
 
-        # colliding with enemy tank?
-        if pygame.sprite.collide_mask(self, enemy_tank) is not None:
+        # colliding with enemy tank or terrain or bottom?
+        if pygame.sprite.collide_mask(self, enemy_tank) is not None or terrain_mask.overlap(self.mask, offset) or y >= play_h:
             collides = True
-
-        else:
-            # offset the mask outline by new ammo coordinates to get actual outline
-            # this is done using numpy array broadcast addition ; a temp array np.array([x,y]) is created on the fly
-            # new_outline = self.outline + np.array([x, y])
-            # print(new_outline)
-            # print(terr_points)
-            # if not set(map(tuple, new_outline)).isdisjoint(set(map(tuple, terr_points))):
-
-            # above method is inaccurate
-            # use terrain mask instead; sometimes ammo flies across without intersecting
-            offset = (x, y)
-            if terrain_mask.overlap(self.mask, offset):
-                collides = True
 
         if new_rect_inside and not collides:
             self.eraser = get_eraser(screen, x, y, self.w, self.h)  # get new eraser for the
             # next location
             screen.blit(self.surf, self.rect)  # draw self to new loc
+
+        if collides:
+            Explosion(screen, playsurf_bk, terrain_mask, self.prev_pos, 50, None)  # not at current ammo loc but old one
 
         if (x > playsurf_rect.right) or (x + self.w < playsurf_rect.left) or collides:
             alive = False

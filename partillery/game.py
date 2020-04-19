@@ -113,6 +113,7 @@ pygame.display.set_caption("Partillery")
 pygame.display.set_icon(pygame.image.load("resources/images/window_icon.png"))
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (100, 40)
 screen = pygame.display.set_mode((full_w, full_h), pygame.RESIZABLE)
+screen_rect = screen.get_rect()
 screen.fill(col_screen)
 play_img = pygame.image.load("resources/images/nighthd_starry_blue.png").convert_alpha()
 playsurf = pygame.transform.scale(play_img, (play_w, play_h))
@@ -157,6 +158,7 @@ while True:
 
     while mode == MODE_SELECTION:
 
+        screen.set_clip(screen_rect)
         player.tank.crosshair.show(screen)
 
         for event in pygame.event.get():
@@ -281,7 +283,7 @@ while True:
         clock.tick(60)
 
     while mode == MODE_FLIGHT:
-
+        screen.set_clip(playsurf_rect)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -295,9 +297,8 @@ while True:
         ammo_new_y = round(((ammo_speed_y0 * t) + (0.5 * g * t ** 2)) + ammo_y0)
 
         # move and check
-        if not (ammo.go(screen, playsurf_rect, terr.mask, enemy.tank, ammo_new_x,
+        if not (ammo.go(screen, playsurf_bk, playsurf_rect, play_h, terr.mask, enemy.tank, ammo_new_x,
                         ammo_new_y)):
-            Explosion(screen, playsurf_bk, ammo.rect.center, 100, None)
             mode = MODE_SELECTION
             del ammo
             # change player
