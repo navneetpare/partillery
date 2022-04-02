@@ -8,7 +8,7 @@ from time import sleep
 import pygame
 
 from partillery.ammo import Ammo
-from partillery.controls import ControlPanel
+from partillery.controls_old import ControlPanel
 from partillery.player import Player
 from partillery.tank import Tank
 from partillery.terrain import Terrain
@@ -39,22 +39,22 @@ col_eve = 0, 30, 70
 
 # Dimensions
 
-full_w = 1280
-full_h = 720
-play_w = full_w
-play_h = int(full_h * 0.8)
-play_left = (full_w - play_w) / 2
-play_right = play_left + play_w
+display_w = 1280
+display_h = 720
+game_w = display_w
+game_h = int(display_h * 0.8)
+game_l = (display_w - game_w) / 2
+game_r = game_l + game_w
 # play_top = (full_h - play_h) / 2
-play_top = 0
-play_bottom = play_top + play_h
-terrain_h = round(play_h * 0.2)
-control_h = full_h - play_h
+game_t = 0
+game_b = game_t + game_h
+terrain_h = round(game_h * 0.2)
+control_h = display_h - game_h
 control_scale = 15  # for my ctrl images; set from tests
 tank_h = 16
 tank_w = 32
-tank_x = play_left
-tank_y = play_top + play_h - tank_h - terrain_h
+tank_x = game_l
+tank_y = game_t + game_h - tank_h - terrain_h
 ammo_h = 4
 
 # Players
@@ -76,7 +76,7 @@ speed_base = 1000
 
 # ---------------------  UTIL FUNCTIONS  --------------------- #
 def get_eraser(x, y, w, h):
-    area = screen.subsurface(pygame.Rect(x - play_left, y - play_top, w, h)).copy()
+    area = screen.subsurface(pygame.Rect(x - game_l, y - game_t, w, h)).copy()
     return area
 
 
@@ -112,35 +112,35 @@ def get_tank_center(x, angle):
 pygame.display.set_caption("Partillery")
 pygame.display.set_icon(pygame.image.load("resources/images/window_icon.png"))
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (100, 40)
-screen = pygame.display.set_mode((full_w, full_h), pygame.RESIZABLE)
+screen = pygame.display.set_mode((display_w, display_h), pygame.RESIZABLE)
 screen_rect = screen.get_rect()
 screen.fill(col_screen)
 play_img = pygame.image.load("resources/images/nighthd_starry_blue.png").convert_alpha()
-playsurf = pygame.transform.scale(play_img, (play_w, play_h))
-playsurf_bk = playsurf.copy()
-playsurf_rect = playsurf.get_rect()
-playsurf_rect.x = play_left
-playsurf_rect.y = play_top
-screen.blit(playsurf, (play_left, play_top))
+gamesurf = pygame.transform.scale(play_img, (game_w, game_h))
+gamesurf_bk = gamesurf.copy()
+gamesurf_rect = gamesurf.get_rect()
+gamesurf_rect.x = game_l
+gamesurf_rect.y = game_t
+screen.blit(gamesurf, (game_l, game_t))
 
 # ---------------------  Draw initial elements  --------------------- #
 
-cpl = ControlPanel(screen, play_left, play_bottom, play_w, full_h - play_h, control_scale)
+cpl = ControlPanel(screen, game_l, game_b, game_w, display_h - game_h, control_scale)
 
 n1 = pygame.time.get_ticks()
-terr = Terrain(screen, play_w, play_h, 'Random')
+terr = Terrain(screen, game_w, game_h, 'Random')
 
-tank1_x = random.randint(play_left, ((play_right - play_left) / 2) - tank_w)  # random x location
+tank1_x = random.randint(game_l, ((game_r - game_l) / 2) - tank_w)  # random x location
 # tank1_x = 32
 tank1_slope_radians = get_slope_radians(tank1_x)  # slope angle on terrain curve
 tank1_center = get_tank_center(tank1_x, tank1_slope_radians)  # new center
 
-tank2_x = random.randint(((play_right - play_left) / 2), play_right - tank_w)
+tank2_x = random.randint(((game_r - game_l) / 2), game_r - tank_w)
 tank2_slope_radians = get_slope_radians(tank2_x)
 tank2_center = get_tank_center(tank2_x, tank2_slope_radians)
 
-player1.tank = Tank(screen, playsurf_rect, 'red', tank1_x, tank1_center, tank1_slope_radians, player1.angle)
-player2.tank = Tank(screen, playsurf_rect, "blue", tank2_x, tank2_center, tank2_slope_radians, player2.angle)
+player1.tank = Tank(screen, gamesurf_rect, 'red', tank1_x, tank1_center, tank1_slope_radians, player1.angle)
+player2.tank = Tank(screen, gamesurf_rect, "blue", tank2_x, tank2_center, tank2_slope_radians, player2.angle)
 
 pygame.display.update()
 
@@ -192,7 +192,7 @@ while True:
                     if player.angle == 360:
                         player.angle = 0
                     cpl.update_angle(screen, player.angle)
-                    player.tank.crosshair.update(screen, playsurf_rect, player.angle)
+                    player.tank.crosshair.update(screen, gamesurf_rect, player.angle)
                     player.tank.update_turret(screen, player.angle, False)
 
                 # ANGLE RIGHT
@@ -201,7 +201,7 @@ while True:
                     if player.angle < 0:
                         player.angle = 359
                     cpl.update_angle(screen, player.angle)
-                    player.tank.crosshair.update(screen, playsurf_rect, player.angle)
+                    player.tank.crosshair.update(screen, gamesurf_rect, player.angle)
                     player.tank.update_turret(screen, player.angle, False)
 
                 # POWER DECREMENT
@@ -248,7 +248,7 @@ while True:
                     # intuitive
                     saved_pos = pygame.mouse.get_pos()
                     initial_angle = player.angle
-                    pygame.mouse.set_pos(playsurf_rect.center)
+                    pygame.mouse.set_pos(gamesurf_rect.center)
                     pos1 = saved_pos[0]
                     pygame.mouse.set_visible(False)
                     pygame.event.set_grab(True)
@@ -266,7 +266,7 @@ while True:
 
                         cpl.update_angle(screen, player.angle)
                         player.tank.update_turret(screen, player.angle, False)
-                        player.tank.crosshair.update(screen, playsurf_rect, player.angle)
+                        player.tank.crosshair.update(screen, gamesurf_rect, player.angle)
 
                         event_list = pygame.event.get(pygame.MOUSEBUTTONUP)
                         for e in event_list:
@@ -283,7 +283,7 @@ while True:
         clock.tick(60)
 
     while mode == MODE_FLIGHT:
-        screen.set_clip(playsurf_rect)
+        screen.set_clip(gamesurf_rect)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -297,7 +297,7 @@ while True:
         ammo_new_y = round(((ammo_speed_y0 * t) + (0.5 * g * t ** 2)) + ammo_y0)
 
         # move and check
-        if not (ammo.go(screen, playsurf_bk, playsurf_rect, play_h, terr.mask, enemy.tank, ammo_new_x,
+        if not (ammo.go(screen, gamesurf_bk, gamesurf_rect, game_h, terr.mask, enemy.tank, ammo_new_x,
                         ammo_new_y)):
             mode = MODE_SELECTION
             del ammo
@@ -322,14 +322,14 @@ while True:
         done = False
         speed = 1
         on_click = False
-        while not done and xnew < play_w - 75:
+        while not done and xnew < game_w - 75:
             if on_click:
                 for event in pygame.event.get():
                     if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                         #  move
                         xnew = player1.tank.proj_x + speed
                         angle = get_slope_radians(xnew)
-                        if xnew >= play_w:  # or (angle >= math.pi / 4):
+                        if xnew >= game_w:  # or (angle >= math.pi / 4):
                             done = True
                             break
                         center = get_tank_center(xnew, angle)
@@ -342,7 +342,7 @@ while True:
                 #  move
                 xnew = player1.tank.proj_x + speed
                 angle = get_slope_radians(xnew)
-                if xnew >= play_w:  # or (angle >= math.pi / 4):
+                if xnew >= game_w:  # or (angle >= math.pi / 4):
                     done = True
                     break
                 center = get_tank_center(xnew, angle)

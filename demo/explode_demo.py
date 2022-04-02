@@ -13,7 +13,7 @@ from numpy import ogrid
 from numpy import sqrt
 
 from partillery.ammo import Ammo
-from partillery.controls import ControlPanel
+from partillery.controls_old import ControlPanel
 from partillery.player import Player
 from partillery.tank import Tank
 from partillery.terrain import Terrain
@@ -86,7 +86,7 @@ pygame.display.set_caption("Partillery")
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (100, 40)
 screen = pygame.display.set_mode((full_w, full_h), pygame.RESIZABLE)
 screen.fill(col_screen)
-play_img = pygame.image.load("../resources/images/nighthd_starry_blue.png").convert_alpha()
+play_img = pygame.image.load("../partillery/resources/images/nighthd_starry_blue.png").convert_alpha()
 playsurf = pygame.transform.scale(play_img, (play_w, play_h))
 playsurfbk = playsurf.copy()
 playsurf_rect = playsurf.get_rect()
