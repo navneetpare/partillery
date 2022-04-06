@@ -8,7 +8,7 @@ from numpy import ogrid
 from numpy import sqrt
 
 
-class Explosion():
+class Explosion:
     def __init__(self, screen, playsurfbk, terrain_mask, center, radius, ammo_type):
         t = 0
         t0 = pygame.time.get_ticks()
@@ -58,5 +58,5 @@ class Explosion():
         # this creates a striped growing explosion - cosine
         # pygame.draw.circle(playsurf, (255, 150, 0, int(255 * (1 + math.cos(i/3)) / 2)), center, i, 1)
 
-        # weid buzzy fireball
+        # weird buzzy fireball
         # pygame.draw.circle(playsurf, (255, 150, 0, int(t % i)), center, i, 1)

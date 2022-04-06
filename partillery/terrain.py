@@ -170,6 +170,7 @@ def generate(w, h, terrain_type):
     y_perlin = perlin_vec(x_arr)
     y_arr = y_base + y_perlin
     y_arr = y_arr.astype(int, 'K', 'unsafe', True, True)
+    print(y_arr.size)
     return y_arr  # only need the y coords; x is implicit as array index - 1
 
     # Debug only
@@ -180,16 +181,15 @@ def generate(w, h, terrain_type):
 
 
 class Terrain:
-    def __init__(self, screen, play_w, play_h, terrain_type):
+    def __init__(self, screen, game_w, game_h, terrain_type):
         # Create a layer for terrain, with per-pixel alpha allowed
-        # Self surf will be blitted onto the screen later
-        self.surf = pygame.Surface((play_w, play_h), pygame.SRCALPHA)
-        self.ypoints = generate(play_w, play_h, terrain_type)  # only y coords
-        x = np.arange(1, play_w + 1, 1)  # just temp
-        self.points = np.column_stack((x, self.ypoints))
+        self.surf = pygame.Surface((game_w, game_h), pygame.SRCALPHA)
+        self.y_coordinates = generate(game_w, game_h, terrain_type)  # only y coords
+        x = np.arange(1, game_w + 1, 1)  # just temp
+        self.points = np.column_stack((x, self.y_coordinates))
 
-        # temp y array which will be moved dowwards for painting layers of terrain
-        y = np.array(self.ypoints)  # for fast numpy methods
+        # temp y array which will be moved downwards for painting layers of terrain
+        y = np.array(self.y_coordinates)  # for fast numpy methods
 
         green_val = 255
         # Top crust
@@ -198,7 +198,7 @@ class Terrain:
             # pygame.draw.lines(self.surf, b1, False, m)
             pygame.draw.lines(self.surf, (170, 170, 170), False, m)
             y += 1
-            y.clip(0, play_h)
+            y.clip(0, game_h)
         '''for i in range(21, 40):
             m = np.column_stack((x, y))
             pygame.draw.lines(self.surf, b2, False, m)
@@ -210,17 +210,15 @@ class Terrain:
             y += 1
             y.clip(0, play_h)'''
         # Body gradient
-        for i in range(4, play_h):
+        for i in range(4, game_h):
             m = np.column_stack((x, y))
             # pygame.draw.lines(self.surf, b4, False, m)
             pygame.draw.lines(self.surf, (150, 150, 150, 255), False, m)
             # pygame.draw.lines(self.surf, b4, False, m)
             green_val -= 0.3
             y += 1
-            y.clip(0, play_h)
+            y.clip(0, game_h)
 
         # get mask after drawing complete
         self.mask = pygame.mask.from_surface(self.surf, 254)
-        # Blit terrain surf onto screen
-        screen.blit(self.surf, (0, 0))
 

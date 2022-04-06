@@ -7,7 +7,7 @@ import sys
 from time import sleep
 import pygame
 
-from partillery.ammo import Ammo
+from partillery.ammo.ammo import Ammo
 from partillery.controls_old import ControlPanel
 from partillery.player import Player
 from partillery.tank import Tank
@@ -24,7 +24,7 @@ clock = pygame.time.Clock()
 MODE_SELECTION = "Selection"
 MODE_FLIGHT = "Flight"
 MODE_TEST = "Test"
-mode = MODE_SELECTION
+mode = MODE_TEST
 
 # Colors
 
@@ -91,14 +91,14 @@ def clamp(n, min_n, max_n):
     return max(min(max_n, n), min_n)
 
 
-def get_slope_radians(x):
+def get_slope_radians(xnew):
     # slope = (y2 - y1) / (x2 - x1)
-    m = - (terr.ypoints[x + 1] - terr.ypoints[x])  # ignore div by x2 - x1 which is always 1
+    m = - (terr.y_coordinates[xnew + 4] - terr.y_coordinates[xnew - 4]) / 8 # ignore div by x2 - x1 which is always 1
     return math.atan(m)
 
 
 def get_tank_center(x, angle):
-    y = terr.ypoints[x - 1]
+    y = terr.y_coordinates[x - 1]
     x1 = int(tank_h / 2 * math.cos(angle + math.pi / 2) + x)
     y1 = int(-(tank_h / 2) * math.sin(angle + math.pi / 2) + y)
     return x1, y1
@@ -115,7 +115,7 @@ os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (100, 40)
 screen = pygame.display.set_mode((display_w, display_h), pygame.RESIZABLE)
 screen_rect = screen.get_rect()
 screen.fill(col_screen)
-play_img = pygame.image.load("resources/images/nighthd_starry_blue.png").convert_alpha()
+play_img = pygame.image.load("resources/images/night_starry_blue.png").convert_alpha()
 gamesurf = pygame.transform.scale(play_img, (game_w, game_h))
 gamesurf_bk = gamesurf.copy()
 gamesurf_rect = gamesurf.get_rect()
@@ -129,6 +129,7 @@ cpl = ControlPanel(screen, game_l, game_b, game_w, display_h - game_h, control_s
 
 n1 = pygame.time.get_ticks()
 terr = Terrain(screen, game_w, game_h, 'Random')
+screen.blit(terr.surf, (0, 0))
 
 tank1_x = random.randint(game_l, ((game_r - game_l) / 2) - tank_w)  # random x location
 # tank1_x = 32
@@ -171,48 +172,48 @@ while True:
                     sys.exit()
 
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                if event.type == pygame.MOUSEMOTION:
+                    # FIRE
+                    if cpl.fire.collidepoint(event.pos):
+                        player.tank.crosshair.hide(screen)
+                        mode = MODE_FLIGHT
+                        # init ammo
+                        ammo_x0 = player.tank.turret_nose[0]
+                        ammo_y0 = player.tank.turret_nose[1]
+                        ammo = Ammo(screen, ammo_x0, ammo_y0)
+                        speed_start = speed_base * player.power / 100
+                        ammo_speed_x0 = speed_start * math.cos(math.radians(player.angle))
+                        ammo_speed_y0 = -(speed_start * math.sin(math.radians(player.angle)))
+                        # timer reset
+                        t0 = pygame.time.get_ticks()
 
-                # FIRE
-                if cpl.fire.collidepoint(event.pos):
-                    player.tank.crosshair.hide(screen)
-                    mode = MODE_FLIGHT
-                    # init ammo
-                    ammo_x0 = player.tank.turret_nose[0]
-                    ammo_y0 = player.tank.turret_nose[1]
-                    ammo = Ammo(screen, ammo_x0, ammo_y0)
-                    speed_start = speed_base * player.power / 100
-                    ammo_speed_x0 = speed_start * math.cos(math.radians(player.angle))
-                    ammo_speed_y0 = -(speed_start * math.sin(math.radians(player.angle)))
-                    # timer reset
-                    t0 = pygame.time.get_ticks()
+                    # ANGLE LEFT
+                    if cpl.angle_inc.collidepoint(event.pos):
+                        player.angle += 1
+                        if player.angle == 360:
+                            player.angle = 0
+                        cpl.update_angle(screen, player.angle)
+                        player.tank.crosshair.update(screen, gamesurf_rect, player.angle)
+                        player.tank.update_turret(screen, player.angle, False)
 
-                # ANGLE LEFT
-                if cpl.angle_inc.collidepoint(event.pos):
-                    player.angle += 1
-                    if player.angle == 360:
-                        player.angle = 0
-                    cpl.update_angle(screen, player.angle)
-                    player.tank.crosshair.update(screen, gamesurf_rect, player.angle)
-                    player.tank.update_turret(screen, player.angle, False)
+                    # ANGLE RIGHT
+                    if cpl.angle_dec.collidepoint(event.pos):
+                        player.angle -= 1
+                        if player.angle < 0:
+                            player.angle = 359
+                        cpl.update_angle(screen, player.angle)
+                        player.tank.crosshair.update(screen, gamesurf_rect, player.angle)
+                        player.tank.update_turret(screen, player.angle, False)
 
-                # ANGLE RIGHT
-                if cpl.angle_dec.collidepoint(event.pos):
-                    player.angle -= 1
-                    if player.angle < 0:
-                        player.angle = 359
-                    cpl.update_angle(screen, player.angle)
-                    player.tank.crosshair.update(screen, gamesurf_rect, player.angle)
-                    player.tank.update_turret(screen, player.angle, False)
+                    # POWER DECREMENT
+                    if cpl.power_dec.collidepoint(event.pos):
+                        player.power = max(player.power - 1, 0)
+                        cpl.update_power(screen, player.power)
 
-                # POWER DECREMENT
-                if cpl.power_dec.collidepoint(event.pos):
-                    player.power = max(player.power - 1, 0)
-                    cpl.update_power(screen, player.power)
-
-                # POWER INCREMENT
-                if cpl.power_inc.collidepoint(event.pos):
-                    player.power = min(player.power + 1, 100)
-                    cpl.update_power(screen, player.power)
+                    # POWER INCREMENT
+                    if cpl.power_inc.collidepoint(event.pos):
+                        player.power = min(player.power + 1, 100)
+                        cpl.update_power(screen, player.power)
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
 
@@ -319,6 +320,7 @@ while True:
 
     while mode == MODE_TEST:
         xnew = tank1_x
+        # current_terr_loc = terr.points[]
         done = False
         speed = 1
         on_click = False
@@ -328,6 +330,7 @@ while True:
                     if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                         #  move
                         xnew = player1.tank.proj_x + speed
+                        # new_terr_loc = speed
                         angle = get_slope_radians(xnew)
                         if xnew >= game_w:  # or (angle >= math.pi / 4):
                             done = True

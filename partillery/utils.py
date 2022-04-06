@@ -1,8 +1,8 @@
+import math
 import pygame
 import yaml
 from yaml.loader import SafeLoader
 import importlib.resources as resources
-
 import partillery
 from partillery.resources import images, audio, fonts
 
@@ -53,6 +53,40 @@ def load_config_resource(name):
                 config_yaml = yaml.load(f, Loader=SafeLoader)
     config = Struct(config_yaml)
     return config
+
+
+def get_slope_radians(terr, x):
+    # slope = (y2 - y1) / (x2 - x1)
+    m = - (terr.y_coordinates[x + 1] - terr.y_coordinates[x])  # ignore div by x2 - x1 which is always 1
+    return math.atan(m)
+
+
+def slope(terr, rect):
+    pass
+
+
+# def get_eraser(x, y, w, h):
+#    area = screen.subsurface(pygame.Rect(x - game_l, y - game_t, w, h)).copy()
+#    return area
+
+def eraser(source_surf: pygame.Surface, rect: pygame.Rect):
+    return source_surf.subsurface(rect).copy()
+
+
+def scale(surface, scaling_factor):
+    rect = surface.get_rect()
+    new_w = round(rect.w / scaling_factor)
+    new_h = round(rect.h / scaling_factor)
+    return pygame.transform.scale(surface, (new_w, new_h))
+
+
+def clamp(n, min_n, max_n):
+    return max(min(max_n, n), min_n)
+
+
+def bell(str):
+    print(str)
+    pass
 
 
 '''

@@ -42,14 +42,14 @@ class ControlPanel:
 
         # create surfaces
 
-        wp_img = pygame.image.load("resources/images/wp_list.png")
+        wp_img = pygame.image.load("resources/images/ammo_list.png")
         angle_img = pygame.image.load("resources/images/param_window.png")
-        angle_dec_img = pygame.image.load("resources/images/inc_button.png")
-        angle_inc_img = pygame.image.load("resources/images/dec_button.png")
+        angle_dec_img = pygame.image.load("resources/images/button_inc.png")
+        angle_inc_img = pygame.image.load("resources/images/button_dec.png")
         power_img = pygame.image.load("resources/images/param_window.png")
         power_bar_img = pygame.image.load("resources/images/power_bar.png")
-        power_inc_img = pygame.image.load("resources/images/inc_button.png")
-        power_dec_img = pygame.image.load("resources/images/dec_button.png")
+        power_inc_img = pygame.image.load("resources/images/button_inc.png")
+        power_dec_img = pygame.image.load("resources/images/button_dec.png")
         fire_img = pygame.image.load("resources/images/param_window.png")
         fire_text_img = pygame.image.load("resources/images/fire_text.png")
         scoreboard_frame = pygame.image.load("resources/images/scoreboard_frame.png")
