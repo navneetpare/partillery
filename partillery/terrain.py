@@ -196,7 +196,7 @@ class Terrain:
         for i in range(1, 3):
             m = np.column_stack((x, y))
             # pygame.draw.lines(self.surf, b1, False, m)
-            pygame.draw.lines(self.surf, (170, 170, 170), False, m)
+            pygame.draw.aalines(self.surf, (170, 170, 170), False, m)
             y += 1
             y.clip(0, game_h)
         '''for i in range(21, 40):

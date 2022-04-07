@@ -7,9 +7,9 @@ col_turret = 200, 200, 200
 
 
 class Tank(pygame.sprite.DirtySprite):
-    def __init__(self, background, playsurf_rect, col, proj_x, center, slope_radians, turret_angle):
+    def __init__(self, background, playsurf_rect, col: str, proj_x, center, slope_radians, turret_angle):
         super(Tank, self).__init__()
-        self.surf_org = utils.load_image_resource('tank_' + col + '.png').convert_alpha()
+        self.surf_org = utils.load_image_resource('tank_' + col + '.png')
         self.h_orig = self.surf_org.get_rect().h  # un-rotated height
         self.w_orig = self.surf_org.get_rect().h  # un-rotated width
         self.surf = pygame.transform.rotate(self.surf_org, math.degrees(slope_radians))

@@ -73,7 +73,3 @@ physics:
 tank:
   width: 16
   height: 32
-player:
-  default_power: 50
-  default_turret_angle_player1: 60
-  default_turret_angle_player2: 120

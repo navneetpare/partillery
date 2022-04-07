@@ -80,12 +80,12 @@ def scale(surface, scaling_factor):
     return pygame.transform.scale(surface, (new_w, new_h))
 
 
-def clamp(n, min_n, max_n):
-    return max(min(max_n, n), min_n)
+def clamp(n, lower_bound, upper_bound):
+    return max(min(upper_bound, n), lower_bound)
 
 
-def bell(str):
-    print(str)
+def bell(message: str):
+    print(message)
     pass
 
 

@@ -8,7 +8,7 @@ from pygame.sprite import Sprite as DirtySprite, Group as Group
 import partillery.utils as utils
 
 
-class ControlPanel():
+class ControlPanel:
     def __init__(self, screen, x, y, w, h, config):
         img_name = config.game_control_panel.background_img
         image = utils.load_image_resource(img_name)
@@ -44,17 +44,6 @@ class ControlPanel():
             y = int(control.rect.top / 2)
             self.draw_title((x, y), str(control.title))
             # Draw the title once and for all. It is not a sprite and won't be updated ever.
-
-    def add_me(self, control):
-
-        self.control_list.append(control)
-
-        if control.title is not None:
-            x = control.rect.centerx
-            y = int(control.rect.top / 2)
-            self.draw_title((x, y), str(control.title))
-
-        self.image.blit(control.image, control.rect)
 
     def draw_title(self, pos: tuple, text: str):
         text_surf = self.font.render(text, True, (255, 255, 255))
