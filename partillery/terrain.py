@@ -97,7 +97,6 @@ def generate(w, h, terrain_type):
 
     if terrain_type == "Random":
         terrain_type = random.choice(['Valley', 'Hill', 'Cliff'])
-    print('::::: TERRAIN_TYPE = ' + terrain_type)
     interpolation_type = 'linear'  # Default
     # Hill
     if terrain_type == "Hill":
@@ -170,7 +169,6 @@ def generate(w, h, terrain_type):
     y_perlin = perlin_vec(x_arr)
     y_arr = y_base + y_perlin
     y_arr = y_arr.astype(int, 'K', 'unsafe', True, True)
-    print(y_arr.size)
     return y_arr  # only need the y coords; x is implicit as array index - 1
 
     # Debug only

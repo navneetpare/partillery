@@ -1,7 +1,7 @@
 import random
 
 import pygame
-from pygame.sprite import GroupSingle, Group
+from pygame.sprite import LayeredDirty
 
 from partillery import utils
 from partillery.controls import ControlPanel
@@ -23,7 +23,8 @@ class Game:
         self.h = int(config.display.height * config.game.height_fraction)
         self.w = config.display.width
         self.surf = pygame.transform.scale(
-            utils.load_image_resource('night_starry_blue.png'), (self.w, self.h))
+            utils.load_image_resource('night_starry_blue.png'), (self.w, self.h)).convert_alpha()
+        self.rect = self.surf.get_rect()
         self.background = self.surf.copy()
         pygame.display.update()
 
@@ -43,15 +44,18 @@ class Game:
         screen.blit(self.surf, (0, 0))
         pygame.display.update()
 
+        screen.set_clip(screen.get_rect())
+
         p1_x = random.randint(0 + tw, int(self.w / 2 - tw))  # random loc in left half of the game area
         p2_x = random.randint(int(self.w / 2) + tw, int(self.w - tw))  # random loc in right half of the game area
 
-        tank_1 = Tank('Nav', 'red', 60, th, tw, p1_x, terr.y_coordinates)
-        tank_2 = Tank('CPU', 'blue', 120, th, tw, p1_x, terr.y_coordinates)
+        player_1 = Tank('Nav', 'red', 45, th, tw, p1_x, terr.y_coordinates, self.rect)
+        player_2 = Tank('CPU', 'blue', 120, th, tw, p2_x, terr.y_coordinates, self.rect)
 
-        player_1 = Group(tank_1, tank_1.turret, tank_1.cross_hair)
-        player_1.draw(self.screen)
+        objects = LayeredDirty(player_1.turret, player_1, player_1.cross_hair,
+                               player_2.turret, player_2, player_2.cross_hair)
 
+        objects.draw(screen)
         pygame.display.update()
 
         while True:
@@ -65,26 +69,18 @@ class Game:
 
             while self.mode == self.MODE_TEST:
                 done = False
-                speed = 4
+                speed = 10
                 while not done:
-
-                    # pygame.display.update(rects1)
                     p1_x += speed
-                    if p1_x >= (self.w - tw):
+                    p2_x -= speed
+                    if p1_x >= (self.w - tw) or p2_x <= tw:
                         done = True
                         break
+
+                    objects.clear(self.screen, background)
                     player_1.update(pos_x=p1_x)
-                    print('tried to move')
-                    player_1.clear(self.screen, background)
-                    player_1.draw(self.screen)
+                    player_2.update(pos_x=p2_x)
+                    objects.draw(self.screen)
                     pygame.display.update()
+                    pygame.event.clear()
                     clock.tick(frame_rate)
-
-                # pygame.event.clear()
-                # clock.tick(60)
-
-                # pygame.display.update()
-                # clock.tick(frame_rate)
-
-
-pygame.sprite.Group.clear()

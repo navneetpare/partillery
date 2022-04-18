@@ -194,7 +194,7 @@ while True:
                             player.angle = 0
                         cpl.update_angle(screen, player.angle)
                         player.tank.crosshair.update(screen, gamesurf_rect, player.angle)
-                        player.tank.update_turret(screen, player.angle, False)
+                        player.tank.draw_turret(screen, player.angle, False)
 
                     # ANGLE RIGHT
                     if cpl.angle_dec.collidepoint(event.pos):
@@ -203,7 +203,7 @@ while True:
                             player.angle = 359
                         cpl.update_angle(screen, player.angle)
                         player.tank.crosshair.update(screen, gamesurf_rect, player.angle)
-                        player.tank.update_turret(screen, player.angle, False)
+                        player.tank.draw_turret(screen, player.angle, False)
 
                     # POWER DECREMENT
                     if cpl.power_dec.collidepoint(event.pos):
@@ -266,7 +266,7 @@ while True:
                             player.angle = 0
 
                         cpl.update_angle(screen, player.angle)
-                        player.tank.update_turret(screen, player.angle, False)
+                        player.tank.draw_turret(screen, player.angle, False)
                         player.tank.crosshair.update(screen, gamesurf_rect, player.angle)
 
                         event_list = pygame.event.get(pygame.MOUSEBUTTONUP)

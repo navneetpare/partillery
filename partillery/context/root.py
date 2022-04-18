@@ -20,8 +20,8 @@ class Root:
         pygame.init()
         clock = pygame.time.Clock()
         pygame.display.set_caption(config.display.caption)
-        # pygame.display.set_icon(pygame.image.load(utils.load_image_resource('window_icon')))
         screen = pygame.display.set_mode((config.display.width, config.display.height), pygame.RESIZABLE)
+        pygame.display.set_icon(utils.load_image_resource('window_icon.png'))
 
         # Launch
         self.context = Game(screen, clock, config)

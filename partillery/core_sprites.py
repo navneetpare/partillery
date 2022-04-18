@@ -1,6 +1,8 @@
 import math
+
 from pygame import error, Surface, draw
-from pygame.sprite import DirtySprite, Group
+from pygame.rect import Rect
+from pygame.sprite import DirtySprite
 from pygame.transform import rotate
 
 from partillery import utils
@@ -20,13 +22,13 @@ class MovableAndRotatableObject(DirtySprite):
         self.dirty = 0
 
     # In-place rotation
-    def rotate_ip(self, radians):
+    def rotate_ip(self, rads):
         # self.erase()
         try:
             # The rotation is absolute, not relative, so we use the stored original image
             # Also the original image is located at (0, 0) so it must be moved back to loc.
             center = self.rect.center
-            self.image = rotate(self.image_original, math.degrees(radians))
+            self.image = rotate(self.image_original, math.degrees(rads))
             self.rect = self.image.get_rect()
             self.rect.center = center
         except error:
@@ -45,37 +47,32 @@ class MovableAndRotatableObject(DirtySprite):
 
 class Tank(MovableAndRotatableObject):
     def __init__(self, name: str, col: str, turret_angle_degrees: int, th: int, tw: int, pos_x: int,
-                 terr_y_coordinates):
+                 terr_y_coordinates, game_rect):
         img = 'tank_' + col + '.png'
         MovableAndRotatableObject.__init__(self, img)
-
+        self.game_rect = game_rect
+        self.top_clamp = game_rect.top
         self.name = name
         self.score = 0
-        self.power = 50
+        self.power = 0
+        self.turret_angle = math.radians(turret_angle_degrees)
+        print('Angle : ' + str(turret_angle_degrees) + ' ' + str(self.turret_angle))
         self.terr_y_coordinates = terr_y_coordinates
         self.h = th
         self.w = tw
+        self.dirty = 2
+        self.turret = Turret(self)
+        self.cross_hair = CrossHair(self)
+        # Set initial position
+        self.update(pos_x=pos_x)
 
-        self.turret_angle = turret_angle_degrees
-        self.cross_hair = None
-        self.dirty = 0
-        self.move_on_terrain(pos_x)
-
-        self.turret = Turret(self.rect.center, th * 1.2, turret_angle_degrees)
-        self.cross_hair = CrossHair(self.rect.center, tw * 4, turret_angle_degrees)
-
-        # self.aim = Group(turret, cross_hair)
-
-        print('Tank Created')
-        print(self.rect)
-
-    def get_center(self, x, angle_radians):
+    def get_center_above_terrain(self, x, angle_rads):
         y = self.terr_y_coordinates[x]
-        x1 = int(self.h / 2 * math.cos(angle_radians + math.pi / 2) + x)
-        y1 = int(-(self.h / 2) * math.sin(angle_radians + math.pi / 2) + y)
+        x1 = int(self.h / 2 * math.cos(angle_rads + math.pi / 2) + x)
+        y1 = int(-(self.h / 2) * math.sin(angle_rads + math.pi / 2) + y)
         return x1, y1
 
-    def get_slope_radians(self, x):
+    def get_slope_rads(self, x):
         # slope = (y2 - y1) / (x2 - x1)
         m = - (self.terr_y_coordinates[x + 4] - self.terr_y_coordinates[x - 4]) / 8
         # we take slope across (x + 4) px and (x - 4px) to smooth out jerky rotation
@@ -83,18 +80,15 @@ class Tank(MovableAndRotatableObject):
         return math.atan(m)
 
     def move_on_terrain(self, pos_x):
-        slope = self.get_slope_radians(pos_x)
-        pos = self.get_center(pos_x, slope)
+        terrain_slope = self.get_slope_rads(pos_x)
+        pos = self.get_center_above_terrain(pos_x, terrain_slope)
         self.move(pos)
-        self.rotate_ip(slope)
-        self.dirty = 1
-        print('Debug - Move on Terrain')
-        print('--------------------------')
-        print('pos_x: ' + str(pos_x))
-        print('slope: ' + str(slope))
-        print('slope_deg: ' + str(math.degrees(slope)))
-        print('target_center: ' + str(pos))
-        print('actual_center: ' + str(self.rect.center))
+        self.rotate_ip(terrain_slope)
+        self.turret.update()
+        self.cross_hair.update()
+
+    def update_angle(self, turret_angle):
+        self.turret_angle = math.radians(turret_angle)
 
     def update(self, **kwargs):
         super().update()
@@ -103,108 +97,63 @@ class Tank(MovableAndRotatableObject):
             self.move_on_terrain(kwargs["pos_x"])
 
         if "turret_angle_degrees" in kwargs:
-            self.turret.set(base=self.rect.center, turret_angle_degrees=kwargs["turret_angle_degrees"])
-            self.cross_hair.set(base=self.rect.center, turret_angle_degrees=kwargs["turret_angle_degrees"])
-
-        if "crosshair_visible" in kwargs:
-            self.cross_hair.set_visibility(kwargs["crosshair_visible"])
+            self.update_angle(kwargs["turret_angle_degrees"])
 
 
 class Turret(DirtySprite):
-    # Always set base = tank body center
-    # turret will be drawn in a layer behind the tank
-    # pass len = tank_h * 1.2
-
-    # To keep the Turret separate from the tank, and be able to use Sprite methods, we give it a dedicated surface
-    # which is a square with the diagonal length equal to turret length. (Saved as orig)
-    # This will be fully transparent and copied to new every time updated. This copy is set as Sprite.image
-    # The turret base will be set to one of the square corners (top left, top right, bottom left, bottom right
-    # based on the angle of the turret
-
-    def __init__(self, base, length, degrees):
+    def __init__(self, tank):
         super().__init__()
-        self.length = length
-        diagonal = math.ceil(math.sqrt(2) * length)  # ceiling gives int >= x
-        self.base_image = Surface((diagonal, diagonal)).convert_alpha()
-        self.base_image.fill((255, 255, 255, 0))  # fully transparent
-        self.image = self.base_image.copy()
+        # We give it a dedicated surface w = h = tw (saved as orig)
+        # This will be fully transparent and copied to new every time updated. To be centered with the tank.
+        self.tank = tank  # Refer to parent for easy access
+        self.len = self.tank.w
+        self.bg = Surface((self.len, self.len)).convert_alpha()
+        self.bg.fill((255, 255, 255, 0))  # fully transparent
+        self.image = None
+        self.rect = None
+        self.nose = None
+        self.visible = 1
+        self.dirty = 2
+        self.update()
+
+    def get_nose(self):
+        x = (self.rect.w / 2) + (self.len * math.cos(self.tank.turret_angle))
+        y = (self.rect.h / 2) - (self.len * math.sin(self.tank.turret_angle))
+        return x, y
+
+    def update(self):
+        # Not to be called before tank.update
+        self.image = self.bg.copy()
         self.rect = self.image.get_rect()
-        self.visible = 0  # DirtySprite attribute
-        self.set(base=base, turret_angle_degrees=degrees, visible=True)
-
-    def update_alt(self, **kwargs):
-        super().update()
-        nose_x = int(kwargs["base"][0] + (self.length * math.cos(kwargs["degrees"])))
-        nose_y = int(kwargs["base"][1] + (self.length * math.sin(kwargs["degrees"])))
-        nose = (nose_x, nose_y)
-        self.image = self.base_image.copy()
-        draw.aaline(self.image, (255, 255, 255), kwargs["base"], nose)
-        self.rect = self.image.get_rect()
-
-        if kwargs["degrees"] < 90:
-            self.rect.bottomleft = kwargs["base"]
-        elif kwargs["degrees"] < 180:
-            self.rect.bottomright = kwargs["base"]
-        elif kwargs["degrees"] < 270:
-            self.rect.topright = kwargs["base"]
-        else:
-            self.rect.topleft = kwargs["base"]
-
-        if kwargs["visible"] is not None:
-            self.visible = kwargs["visible"]
-
-        self.dirty = 1
-
-    def set(self, base, turret_angle_degrees, visible=None):
-        nose_x = int(base[0] + (self.length * math.cos(turret_angle_degrees)))
-        nose_y = int(base[1] + (self.length * math.sin(turret_angle_degrees)))
-        nose = (nose_x, nose_y)
-        self.image = self.base_image.copy()
-        draw.aaline(self.image, (255, 255, 255), base, nose)
-        self.rect = self.image.get_rect()
-
-        if turret_angle_degrees < 90:
-            self.rect.bottomleft = base
-        elif turret_angle_degrees < 180:
-            self.rect.bottomright = base
-        elif turret_angle_degrees < 270:
-            self.rect.topright = base
-        else:
-            self.rect.topleft = base
-
-        if visible is not None:
-            self.visible = visible
-
-        self.dirty = 1
+        self.rect.center = self.tank.rect.center
+        self.nose = self.get_nose()
+        draw.line(self.image, (255, 255, 255, 255), (self.rect.w / 2, self.rect.h / 2), self.nose, 2)
 
 
 class CrossHair(DirtySprite):
-    def __init__(self, base, distance, degrees):
+    def __init__(self, tank):
         super().__init__()
-        self.distance = distance
+        # We give it a dedicated surface w = h = tw (saved as orig)
+        # This will be fully transparent and copied to new every time updated. To be centered with the tank.
+        self.tank = tank  # Refer to parent for easy access
+        self.distance = self.tank.w * 3
         self.image = utils.load_image_resource('crosshair.png')
         self.rect = self.image.get_rect()
-        self.visible = 0  # DirtySprite attribute
-        self.set(base=base, turret_angle_degrees=degrees, visible=True)
+        w = self.rect.w  # w = h for cross-hair, so we'll reuse it.
+        # Define area where cross-hair can move. Half width to be cropped out of game area.
+        self.clip_rect = Rect(self.tank.game_rect.left + w / 2, self.tank.game_rect.top + w / 2,
+                              self.tank.game_rect.w - w, self.tank.game_rect.h - w)
+        self.visible = 1
+        self.dirty = 2
 
-    def update_alt(self, **kwargs):
-        super().update()
-        x = int(kwargs["base"][0] + (self.distance * math.cos(kwargs["degrees"])))
-        y = int(kwargs["base"][1] + (self.distance * math.sin(kwargs["degrees"])))
-        self.rect.center = (x, y)
+    def update(self):
 
-        if kwargs["visible"] is not None:
-            self.visible = kwargs["visible"]
-
-    def set(self, base, turret_angle_degrees, visible):
-        x = int(base[0] + (self.distance * math.cos(turret_angle_degrees)))
-        y = int(base[1] + (self.distance * math.sin(turret_angle_degrees)))
-        self.rect.center = (x, y)
-
-        if visible is not None:
-            self.visible = visible
-
-        self.dirty = 1
-
-    def set_visibility(self, visible):
-        self.visible = visible
+        x = self.tank.rect.centerx + (self.distance * math.cos(self.tank.turret_angle))
+        y = self.tank.rect.centery - (self.distance * math.sin(self.tank.turret_angle))
+        # x = utils.clamp(x, self.tank.game_rect.left + self.tank.w / 2, self.tank.game_rect.right - self.tank.w /2)
+        # y = utils.clamp(y, self.tank.game_rect.top, self.tank.game_rect.bottom)
+        clipped = self.clip_rect.clipline(self.tank.rect.center, (x, y))
+        if not clipped:
+            self.rect.center = x, y
+        else:
+            self.rect.center = clipped[1]
