@@ -2,7 +2,7 @@ import math
 
 from pygame import error, Surface, draw
 from pygame.rect import Rect
-from pygame.sprite import DirtySprite
+from pygame.sprite import DirtySprite, Sprite
 from pygame.transform import rotate
 
 from partillery import utils
@@ -19,7 +19,7 @@ class MovableAndRotatableObject(DirtySprite):
         self.image = utils.load_image_resource(img)
         self.image_original = self.image.copy()
         self.rect = self.image.get_rect()
-        self.dirty = 0
+        self.dirty = 1
 
     # In-place rotation
     def rotate_ip(self, rads):
@@ -157,3 +157,14 @@ class CrossHair(DirtySprite):
             self.rect.center = x, y
         else:
             self.rect.center = clipped[1]
+
+
+class Mouse(Sprite):
+    # Pseudo-sprite that is not drawn. Only to get collisions with controls.
+    def __init__(self, center):
+        super().__init__()
+        self.image = Surface((1, 1)).convert_alpha()
+        self.image.fill((255, 255, 255, 0))
+        self.rect = self.image.get_rect()
+        self.rect.center = center
+        self.previous_control = None  # Used for deactivating hover animation

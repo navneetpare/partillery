@@ -3,7 +3,7 @@
 # https://stackoverflow.com/questions/57962130/how-can-i-change-the-brightness-of-an-image-in-pygame
 
 import pygame
-from pygame.sprite import Sprite as DirtySprite, Group as Group
+from pygame.sprite import DirtySprite, LayeredDirty
 
 import partillery.utils as utils
 
@@ -21,12 +21,12 @@ class ControlPanel:
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        self.controls = Group()
+        self.controls = LayeredDirty()
 
         # Create controls and other elements
-        self.build(config)
-        self.controls.draw(self.image)
         self.screen.blit(self.image, self.rect)
+        self.build(config)
+        self.controls.draw(self.screen)
 
     # Calculate absolute center coordinates based on relative center
     # Returns a tuple to be used as rect.center
@@ -34,14 +34,17 @@ class ControlPanel:
         x_offset_percent = pos[0]
         y_offset_percent = pos[1]
         x = int(x_offset_percent * self.rect.w)
-        y = int(y_offset_percent * self.rect.h)
+        y = int(y_offset_percent * self.rect.h + self.rect.top)
         return x, y
 
     def add(self, control):
+        print('Adding :' + control.name)
+        print(isinstance(control, DirtySprite))
         self.controls.add(control)
         if control.title is not None:
             x = control.rect.centerx
-            y = int(control.rect.top / 2)
+            y = int((control.rect.top + self.rect.top) / 2)
+            # y = int(control.rect.top / 2)
             self.draw_title((x, y), str(control.title))
             # Draw the title once and for all. It is not a sprite and won't be updated ever.
 
@@ -49,7 +52,8 @@ class ControlPanel:
         text_surf = self.font.render(text, True, (255, 255, 255))
         text_surf_rect = text_surf.get_rect()
         text_surf_rect.center = pos
-        self.image.blit(text_surf, text_surf_rect)
+        self.screen.blit(text_surf, text_surf_rect)
+        pygame.display.update()
         # print(str(self.surf))
 
     def build(self, config):
@@ -78,12 +82,13 @@ class ControlPanel:
             layout = getattr(layout_all, name)
             center = self.set_center(layout.pos)
             img_name = layout.img
+            img_name_hover = layout.img_hover
             title = None
 
             if hasattr(layout, 'title'):
                 title = getattr(layout, 'title')
 
-            item = ClickableControl(name, img_name, img_scale_factor, center, title)
+            item = ClickableControl(name, img_name, img_name_hover, img_scale_factor, center, title)
 
             if hasattr(layout, 'overlay'):
                 overlay = getattr(layout, 'overlay')
@@ -102,31 +107,54 @@ class ControlPanel:
 # Child element can be a value viewer or a value bar with their own implementations and update mechanisms
 
 class ClickableControl(DirtySprite):
-    def __init__(self, name, img_name, img_scale_factor, center, title):
+    def __init__(self, name, img_name, img_name_hover, img_scale_factor, center, title):
         DirtySprite.__init__(self)
         self.name = name
         self.title = title
         self.overlay = None
-        self.clicked = False
-        self.hover = False
+        self.dirty = 1
+        self.visible = 1
 
-        self.image = scale(utils.load_image_resource(img_name), img_scale_factor)
+        self.image_regular = scale(utils.load_image_resource(img_name), img_scale_factor)
+        self.image_hover = scale(utils.load_image_resource(img_name_hover), img_scale_factor)
+        self.image = self.image_regular
 
         # Brightened image to show animation on hover
-        self.image_animate = self.image.copy()
-        self.image_animate.fill((10, 10, 10), special_flags=pygame.BLEND_RGB_SUB)
+        # self.image_hover = self.image.copy()
+        # self.image_hover.fill((20, 20, 20), special_flags=pygame.BLEND_RGB_SUB)
 
         # self.surf = self.image
         self.rect = self.image.get_rect()
         self.rect.center = center
 
-    def animate(self):
-        pass
+    def hover_on(self):
+        self.image = self.image_hover
+        self.dirty = 1
 
-    def update(self, *args):
-        self.animate()
+    def hover_off(self):
+        self.image = self.image_regular
+        self.dirty = 1
+
+    def click_down(self, current_player):
+        lock_mouse_to_control = False
+        if self.name in ['angle', 'power', 'power_bar']:
+            lock_mouse_to_control = True
+        elif self.name in ['angle_dec', 'angle_inc', 'power_dec', 'power_inc', 'fire']:
+            self.rect.centery += 2  # animate button depression
+            self.dirty = 1
+
+        return lock_mouse_to_control
+
+    def click_up(self, current_player):
+        if self.name in ['angle', 'power', 'power_bar']:
+            pass
+        elif self.name in ['angle_dec', 'angle_inc', 'power_dec', 'power_inc', 'fire']:
+            self.rect.centery -= 2  # un-animate button depression
+            self.dirty = 1
+
+    def update(self, text):
         if self.overlay is not None:
-            self.overlay.update()
+            self.overlay.update(text)
 
 
 class ValueViewer:

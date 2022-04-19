@@ -23,46 +23,55 @@ game_control_panel:
   #       as a percentage of control panel dimensions.
   # The main logo area is given 1/5 of the panel width
   # The rest of the control sets are X-axis centered at 1/5th of the 'remaining' width
-  # Placement of flanking inc / dec buttons is fine-tuned be experiment.
+  # Placement of flanking inc / dec buttons is fine-tuned by experiment.
     ammo_list:
       title: 'Choose Ammo'
       pos: [0.28, 0.45]
       img: 'ammo_list.png'
+      img_hover: 'ammo_list_hover.png'
       overlay: 'viewer'
       overlay_w_ratio: 0.9
       overlay_h_ratio: 0.75
     angle_dec:
-      pos: [0.397, 0.45]
+      pos: [0.393, 0.45]
       img: 'button_dec.png'
+      img_hover: 'button_dec_hover.png'
     angle:
       title: 'Turret Angle'
       pos: [0.44, 0.45]
       img: 'param_window.png'
+      img_hover: 'param_window_hover.png'
       overlay: 'viewer'
       overlay_w_ratio: 0.8
       overlay_h_ratio: 0.75
     angle_inc:
-      pos: [0.484, 0.45]
+      pos: [0.487, 0.45]
       img: 'button_inc.png'
+      img_hover: 'button_inc_hover.png'
     power_dec:
-      pos: [0.557, 0.45]
+      pos: [0.553, 0.45]
       img: 'button_dec.png'
+      img_hover: 'button_dec_hover.png'
     power:
       title: 'Power'
       pos: [0.60, 0.45]
       img: 'param_window.png'
+      img_hover: 'param_window_hover.png'
       overlay: 'viewer'
       overlay_w_ratio: 0.8
       overlay_h_ratio: 0.75
     power_inc:
-      pos: [0.644, 0.45]
+      pos: [0.647, 0.45]
       img: 'button_inc.png'
+      img_hover: 'button_inc_hover.png'
     fire:
       pos: [0.76, 0.5]
       img: 'button_fire.png'
+      img_hover: 'button_fire_hover.png'
     scoreboard:
       pos: [0.92, 0.5]
       img: 'scoreboard_frame.png'
+      img_hover: 'scoreboard_frame_hover.png'
       overlay: 'viewer'
       overlay_w_ratio: 0.88
       overlay_h_ratio: 0.89
