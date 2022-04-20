@@ -2,7 +2,7 @@ import math
 
 from pygame import error, Surface, draw
 from pygame.rect import Rect
-from pygame.sprite import DirtySprite, Sprite
+from pygame.sprite import DirtySprite
 from pygame.transform import rotate
 
 from partillery import utils
@@ -46,7 +46,7 @@ class MovableAndRotatableObject(DirtySprite):
 
 
 class Tank(MovableAndRotatableObject):
-    def __init__(self, name: str, col: str, turret_angle_degrees: int, th: int, tw: int, pos_x: int,
+    def __init__(self, name: str, col: str, angle: int, th: int, tw: int, pos_x: int,
                  terr_y_coordinates, game_rect):
         img = 'tank_' + col + '.png'
         MovableAndRotatableObject.__init__(self, img)
@@ -54,9 +54,8 @@ class Tank(MovableAndRotatableObject):
         self.top_clamp = game_rect.top
         self.name = name
         self.score = 0
-        self.power = 0
-        self.turret_angle = math.radians(turret_angle_degrees)
-        print('Angle : ' + str(turret_angle_degrees) + ' ' + str(self.turret_angle))
+        self.power = 50
+        self.angle = angle
         self.terr_y_coordinates = terr_y_coordinates
         self.h = th
         self.w = tw
@@ -87,17 +86,16 @@ class Tank(MovableAndRotatableObject):
         self.turret.update()
         self.cross_hair.update()
 
-    def update_angle(self, turret_angle):
-        self.turret_angle = math.radians(turret_angle)
-
     def update(self, **kwargs):
         super().update()
 
         if "pos_x" in kwargs:
             self.move_on_terrain(kwargs["pos_x"])
 
-        if "turret_angle_degrees" in kwargs:
-            self.update_angle(kwargs["turret_angle_degrees"])
+        if "angle" in kwargs:
+            self.angle = kwargs["angle"]
+            self.turret.update()
+            self.cross_hair.update()
 
 
 class Turret(DirtySprite):
@@ -113,12 +111,13 @@ class Turret(DirtySprite):
         self.rect = None
         self.nose = None
         self.visible = 1
-        self.dirty = 2
+        self.dirty = 0
         self.update()
 
     def get_nose(self):
-        x = (self.rect.w / 2) + (self.len * math.cos(self.tank.turret_angle))
-        y = (self.rect.h / 2) - (self.len * math.sin(self.tank.turret_angle))
+        angle_radians = math.radians(self.tank.angle)
+        x = (self.rect.w / 2) + (self.len * math.cos(angle_radians))
+        y = (self.rect.h / 2) - (self.len * math.sin(angle_radians))
         return x, y
 
     def update(self):
@@ -128,6 +127,7 @@ class Turret(DirtySprite):
         self.rect.center = self.tank.rect.center
         self.nose = self.get_nose()
         draw.line(self.image, (255, 255, 255, 255), (self.rect.w / 2, self.rect.h / 2), self.nose, 2)
+        self.dirty = 1
 
 
 class CrossHair(DirtySprite):
@@ -144,12 +144,12 @@ class CrossHair(DirtySprite):
         self.clip_rect = Rect(self.tank.game_rect.left + w / 2, self.tank.game_rect.top + w / 2,
                               self.tank.game_rect.w - w, self.tank.game_rect.h - w)
         self.visible = 1
-        self.dirty = 2
+        self.dirty = 0
 
     def update(self):
-
-        x = self.tank.rect.centerx + (self.distance * math.cos(self.tank.turret_angle))
-        y = self.tank.rect.centery - (self.distance * math.sin(self.tank.turret_angle))
+        angle_radians = math.radians(self.tank.angle)
+        x = self.tank.rect.centerx + (self.distance * math.cos(angle_radians))
+        y = self.tank.rect.centery - (self.distance * math.sin(angle_radians))
         # x = utils.clamp(x, self.tank.game_rect.left + self.tank.w / 2, self.tank.game_rect.right - self.tank.w /2)
         # y = utils.clamp(y, self.tank.game_rect.top, self.tank.game_rect.bottom)
         clipped = self.clip_rect.clipline(self.tank.rect.center, (x, y))
@@ -157,14 +157,7 @@ class CrossHair(DirtySprite):
             self.rect.center = x, y
         else:
             self.rect.center = clipped[1]
+        self.dirty = 1
 
 
-class Mouse(Sprite):
-    # Pseudo-sprite that is not drawn. Only to get collisions with controls.
-    def __init__(self, center):
-        super().__init__()
-        self.image = Surface((1, 1)).convert_alpha()
-        self.image.fill((255, 255, 255, 0))
-        self.rect = self.image.get_rect()
-        self.rect.center = center
-        self.previous_control = None  # Used for deactivating hover animation
+

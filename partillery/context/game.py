@@ -6,8 +6,8 @@ import pygame
 from pygame.sprite import LayeredDirty, DirtySprite, Sprite
 
 from partillery import utils
-from partillery.controls import ControlPanel
-from partillery.core_sprites import Tank, Mouse
+from partillery.controls import ControlPanel, Mouse
+from partillery.core_sprites import Tank
 from partillery.terrain import Terrain
 
 
@@ -48,10 +48,9 @@ class Game:
         screen.blit(self.surf, (0, 0))
         game_bg = self.surf.copy()
         pygame.display.update()
+        full_bg = screen.copy()
 
         screen.set_clip(screen.get_rect())
-
-        mouse = Mouse(cpl.rect.center)
 
         p1_x = random.randint(0 + tw, int(self.w / 2 - tw))  # random loc in left half of the game area
         p2_x = random.randint(int(self.w / 2) + tw, int(self.w - tw))  # random loc in right half of the game area
@@ -65,48 +64,53 @@ class Game:
         objects.draw(screen)
         pygame.display.update()
 
+        mouse = Mouse(cpl.rect.center)
         current_player = player_1
 
-        while True:
+        while 1:
             while self.mode == self.MODE_CONTROL:
-                full_bg = screen.copy()
-                for event in pygame.event.get():
 
+                for event in pygame.event.get():
+                    pygame.event.clear()
                     if event.type == pygame.MOUSEMOTION:
                         mouse.rect.center = event.pos
-                        active_control = pygame.sprite.spritecollideany(mouse, cpl.controls)
+                        focused_control = pygame.sprite.spritecollideany(mouse, cpl.controls)
+                        if not mouse.locked:
+                            if mouse.prev_focused_control == focused_control:
+                                pass
+                            else:
+                                if mouse.prev_focused_control is not None:
+                                    getattr(mouse.prev_focused_control, 'hover_off')()
+                                if focused_control is not None:
+                                    getattr(focused_control, 'hover_on')()
+                            mouse.prev_focused_control = focused_control
 
-                        if mouse.previous_control == active_control:
-                            pass
-                        elif mouse.previous_control is None:
-                            getattr(active_control, 'hover_on')()
-                        elif mouse.previous_control is not None:
-                            getattr(mouse.previous_control, 'hover_off')()
-
-                        mouse.previous_control = active_control
-
-                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                        active_control = pygame.sprite.spritecollideany(mouse, cpl.controls)
-                        if active_control is not None:
-                            lock_mouse_to_control = getattr(active_control, 'click_down')(current_player)
-                        cpl.controls.clear(screen, full_bg)
-                        dirty_rects = cpl.controls.draw(screen)
-                        pygame.display.update(dirty_rects)
-                        clock.tick(frame_rate)
+                    elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        focused_control = pygame.sprite.spritecollideany(mouse, cpl.controls)
+                        mouse.clicked_control = focused_control
+                        if focused_control is not None:
+                            mouse.locked = getattr(focused_control, 'click_down')(current_player)
+                            if mouse.locked:
+                                mouse.saved_pos = event.pos
+                                pygame.mouse.set_visible(False)
 
                     elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                        active_control = pygame.sprite.spritecollideany(mouse, cpl.controls)
-                        if active_control is not None:
-                            lock_mouse_to_control = getattr(active_control, 'click_up')(current_player)
-                        cpl.controls.clear(screen, full_bg)
-                        dirty_rects = cpl.controls.draw(screen)
-                        pygame.display.update(dirty_rects)
-                        clock.tick(frame_rate)
+                        if mouse.locked:
+                            pygame.mouse.set_pos(mouse.saved_pos)
+                        mouse.locked = False
+                        pygame.mouse.set_visible(True)
+                        focused_control = pygame.sprite.spritecollideany(mouse, cpl.controls)
+                        if mouse.clicked_control is not None:
+                            if focused_control == mouse.clicked_control:
+                                getattr(mouse.clicked_control, 'click_up')(True, current_player)
+                            else:
+                                getattr(mouse.clicked_control, 'click_up')(False, current_player)
+                        mouse.clicked_control = None
 
-                    sleep(0.001)
-
-                    cpl.controls.draw(screen)
-                    pygame.display.update()
+                    sleep(0.015)
+                    cpl.elements.clear(screen, full_bg)
+                    dirty_rect_list = cpl.elements.draw(screen)
+                    pygame.display.update(dirty_rect_list)
                     clock.tick(frame_rate)
 
             while self.mode == self.MODE_FLIGHT:

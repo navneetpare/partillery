@@ -12,7 +12,7 @@ class Root:
 
     def start(self):
         # Read config
-        config = utils.load_config_resource("___game_settings.yaml")
+        config = utils.load_config_resource()
 
         # Init pygame
         os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (config.display.pos_x, config.display.pos_y)

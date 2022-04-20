@@ -45,7 +45,9 @@ def load_font_resource(name, size):
 
 
 # Returns a config object that can be read as config.a.b.c
-def load_config_resource(name):
+def load_config_resource():
+    name = "___game_settings.yaml"
+    config_yaml = None
     config = None
     if resources.is_resource(partillery, name):
         with resources.path(partillery, name) as path:
@@ -53,6 +55,16 @@ def load_config_resource(name):
                 config_yaml = yaml.load(f, Loader=SafeLoader)
     config = Struct(config_yaml)
     return config
+
+
+def get_control_element_names():
+    config_yaml = None
+    name = "___game_settings.yaml"
+    if resources.is_resource(partillery, name):
+        with resources.path(partillery, name) as path:
+            with open(path, 'r') as f:
+                config_yaml = yaml.load(f, Loader=SafeLoader)
+    return config_yaml["game_control_panel"]["layout"].keys()
 
 
 def get_slope_radians(terr, x):
