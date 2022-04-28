@@ -61,11 +61,14 @@ class Game:
         objects = LayeredDirty(player_1.turret, player_1, player_1.cross_hair,
                                player_2.turret, player_2, player_2.cross_hair)
 
-        objects.draw(screen)
-        pygame.display.update()
-
         mouse = Mouse(cpl.rect.center)
         current_player = player_1
+        cpl.update_power(current_player.power)
+        cpl.update_angle(current_player.angle)
+        cpl.update_weapon("Plain bomb")
+        objects.draw(screen)
+        cpl.elements.draw(screen)
+        pygame.display.update()
 
         while 1:
             while self.mode == self.MODE_CONTROL:
@@ -84,12 +87,14 @@ class Game:
                                 if focused_control is not None:
                                     getattr(focused_control, 'hover_on')()
                             mouse.prev_focused_control = focused_control
+                        else:
+                            getattr(mouse.clicked_control, 'handle_mouse_move')(current_player, event.pos)
 
                     elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                         focused_control = pygame.sprite.spritecollideany(mouse, cpl.controls)
                         mouse.clicked_control = focused_control
                         if focused_control is not None:
-                            mouse.locked = getattr(focused_control, 'click_down')(current_player)
+                            mouse.locked = getattr(focused_control, 'click_down')(current_player, event.pos)
                             if mouse.locked:
                                 mouse.saved_pos = event.pos
                                 pygame.mouse.set_visible(False)
@@ -109,7 +114,10 @@ class Game:
 
                     sleep(0.015)
                     cpl.elements.clear(screen, full_bg)
+                    objects.clear(screen, full_bg)
                     dirty_rect_list = cpl.elements.draw(screen)
+                    pygame.display.update(dirty_rect_list)
+                    dirty_rect_list = objects.draw(screen)
                     pygame.display.update(dirty_rect_list)
                     clock.tick(frame_rate)
 

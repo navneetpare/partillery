@@ -14,3 +14,12 @@ Pending features
 3) Tank move at will
 4) Tank fall after explosion
 5) Terrain fall after explosion
+
+
+GIMP:
+--------------------
+All dimensions should be even nos and multiple of 16
+Height Layer: 6a6a6a
+Face Layer: 626262
+Face Layer: Shrink by fixed pixels:16
+Rounding: fixed pixels 16
