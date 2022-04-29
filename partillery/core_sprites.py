@@ -50,6 +50,8 @@ class Tank(MovableAndRotatableObject):
                  terr_y_coordinates, game_rect):
         img = 'tank_' + col + '.png'
         MovableAndRotatableObject.__init__(self, img)
+        self.moves_left = 4
+        self.move_direction = 1  # -1 == left, +1 = right
         self.game_rect = game_rect
         self.top_clamp = game_rect.top
         self.name = name
@@ -61,7 +63,8 @@ class Tank(MovableAndRotatableObject):
         self.w = tw
         self.dirty = 2
         self.turret = Turret(self)
-        self.cross_hair = CrossHair(self)
+        self.crosshair = CrossHair(self)
+        self.selected_weapon = "Plain bomb"
         # Set initial position
         self.update(pos_x=pos_x)
 
@@ -84,7 +87,7 @@ class Tank(MovableAndRotatableObject):
         self.move(pos)
         self.rotate_ip(terrain_slope)
         self.turret.update()
-        self.cross_hair.update()
+        self.crosshair.update()
 
     def update(self, **kwargs):
         super().update()
@@ -95,7 +98,7 @@ class Tank(MovableAndRotatableObject):
         if "angle" in kwargs:
             self.angle = kwargs["angle"]
             self.turret.update()
-            self.cross_hair.update()
+            self.crosshair.update()
 
 
 class Turret(DirtySprite):
@@ -143,7 +146,7 @@ class CrossHair(DirtySprite):
         # Define area where cross-hair can move. Half width to be cropped out of game area.
         self.clip_rect = Rect(self.tank.game_rect.left + w / 2, self.tank.game_rect.top + w / 2,
                               self.tank.game_rect.w - w, self.tank.game_rect.h - w)
-        self.visible = 1
+        self.visible = 0
         self.dirty = 0
 
     def update(self):

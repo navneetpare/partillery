@@ -1,0 +1,127 @@
+---
+display:
+  width: 1280
+  height: 720
+  pos_x: 100
+  pos_y: 50
+  frame_rate: 60
+  caption: 'Partillery'
+  window_icon: 'window_icon.png'
+game:
+  height_fraction: 0.8
+  tank_width: 32
+  tank_height: 16
+game_control_panel:
+  img_scale_factor: 4.4
+  background_img: 'control_panel.png'
+  font_name: 'expressway.ttf'
+  font_size_viewer: 13
+  font_size_title: 15
+  layout:
+  # For buttons, windows etc.
+  # pos : position variable indicates relative offsets from the top left corner of the control panel
+  #       as a percentage of control panel dimensions.
+  # The main logo area is given 1/5 of the panel width
+  # The rest of the control sets are X_axis centered at 1/5th of the 'remaining' width
+  # Placement of flanking inc / dec buttons is fine_tuned by experiment.
+  # All values are in percentage of parent surface dimensions
+    weapons_list:
+      # title: 'Choose Ammo'
+      clickable: True
+      can_lock_mouse: True
+      pos: [0.28, 0.5]
+      img: 'weapons_list.png'
+      img_hover: 'weapons_list_hover.png'
+      overlay: 'viewer'
+      overlay_w_ratio: 0.94
+      overlay_h_ratio: 0.45
+      overlay_x_offset: 0.
+      overlay_y_offset: 0.38
+    button_angle:
+      clickable: True
+      can_lock_mouse: True
+      pos: [ 0.44, 0.34 ]
+      img: 'button_angle.png'
+      img_hover: 'button_angle_hover.png'
+    button_angle_left:
+      clickable: True
+      can_lock_mouse: False
+      pos: [0.413, 0.65]
+      img: 'button_dec.png'
+      img_hover: 'button_dec_hover.png'
+    viewer_angle:
+      # title: 'Turret Angle'
+      clickable: False
+      can_lock_mouse: False
+      pos: [0.44, 0.65]
+      img: 'viewer_angle.png'
+      img_hover: 'viewer_angle.png'
+      overlay: 'viewer'
+      overlay_w_ratio: 1
+      overlay_h_ratio: 1
+      overlay_x_offset: 0
+      overlay_y_offset: 0
+    button_angle_right:
+      clickable: True
+      can_lock_mouse: False
+      pos: [0.467, 0.65]
+      img: 'button_inc.png'
+      img_hover: 'button_inc_hover.png'
+    button_power_dec:
+      clickable: True
+      can_lock_mouse: False
+      pos: [0.560, 0.65]
+      img: 'button_dec.png'
+      img_hover: 'button_dec_hover.png'
+    viewer_power:
+      clickable: False
+      can_lock_mouse: False
+      # title: 'Power'
+      pos: [0.60, 0.65]
+      img: 'viewer_power.png'
+      img_hover: 'viewer_power.png'
+      overlay: 'viewer'
+      overlay_w_ratio: 1
+      overlay_h_ratio: 1
+      overlay_x_offset: 0
+      overlay_y_offset: 0
+    button_power_inc:
+      clickable: True
+      can_lock_mouse: False
+      pos: [0.640, 0.65]
+      img: 'button_inc.png'
+      img_hover: 'button_inc_hover.png'
+    power_bar:
+      clickable: True
+      can_lock_mouse: True
+      pos: [ 0.6, 0.34 ]
+      img: 'power_bar.png'
+      img_hover: 'power_bar_hover.png'
+      overlay: 'value_bar'
+      overlay_w_ratio: 0.93
+      overlay_h_ratio: 0.34
+      overlay_x_offset: 0
+      overlay_y_offset: 0.5
+    button_fire:
+      clickable: True
+      can_lock_mouse: False
+      pos: [0.76, 0.5]
+      img: 'button_fire.png'
+      img_hover: 'button_fire_hover.png'
+    score_board:
+      clickable: False
+      can_lock_mouse: False
+      pos: [0.92, 0.5]
+      img: 'score_board.png'
+      img_hover: 'score_board_hover.png'
+      overlay: 'viewer'
+      overlay_w_ratio: 0.94
+      overlay_h_ratio: 0.91
+      overlay_x_offset: 0.01
+      overlay_y_offset: 0
+physics:
+  gravity: 500
+  base_speed: 10
+tank:
+  width: 16
+  height: 32

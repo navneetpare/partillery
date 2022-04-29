@@ -67,6 +67,16 @@ def get_control_element_names():
     return config_yaml["game_control_panel"]["layout"].keys()
 
 
+def get_layout_control_group_names():
+    config_yaml = None
+    name = "___game_settings.yaml"
+    if resources.is_resource(partillery, name):
+        with resources.path(partillery, name) as path:
+            with open(path, 'r') as f:
+                config_yaml = yaml.load(f, Loader=SafeLoader)
+    return config_yaml["game_control_panel"]["layout"].keys()
+
+
 def get_slope_radians(terr, x):
     # slope = (y2 - y1) / (x2 - x1)
     m = - (terr.y_coordinates[x + 1] - terr.y_coordinates[x])  # ignore div by x2 - x1 which is always 1

@@ -1,12 +1,14 @@
 # References for animating buttons
 # https://stackoverflow.com/questions/601776/what-do-the-blend-modes-in-pygame-mean
 # https://stackoverflow.com/questions/57962130/how-can-i-change-the-brightness-of-an-image-in-pygame
+import typing
 
 import pygame
 from pygame import Surface
 from pygame.sprite import DirtySprite, LayeredDirty, Sprite
 
 import partillery.utils as utils
+from partillery.core_sprites import Tank
 
 
 class ControlPanel:
@@ -50,11 +52,11 @@ class ControlPanel:
             self.controls.add(control)
 
         setattr(self, control.name, control)
-        if control.title is not None:
+        '''if control.title is not None:
             x = control.rect.centerx
             y = int((control.rect.top + self.rect.top) / 2)
             self.draw_title((x, y), str(control.title))
-            # Draw the title once and for all. It is not a sprite and won't be updated ever.
+            # Draw the title once and for all. It is not a sprite and won't be updated ever.'''
 
     def draw_title(self, pos: tuple, text: str):
         text_surf = self.font.render(text, True, (255, 255, 255))
@@ -64,54 +66,95 @@ class ControlPanel:
         pygame.display.update()
 
     def build(self, config):
-        #   Create control items as string objects from config
-        #   These will be then dynamically created as 'Control' objects in a loop by reading
-        #   their names as strings from the config object using getattr
-        #   Saves us writing a lot of object creation boilerplate code.
-        img_scale_factor = config.game_control_panel.img_scale_factor
-        layout_all = config.game_control_panel.layout
-        controls = utils.get_control_element_names()
+        # Create control items as string objects from config
+        # These will be then dynamically created as 'Control' objects in a loop by reading
+        # their names as strings from the config object using getattr
+        # Saves us writing a lot of object creation boilerplate code.
+        img_scaling_factor = config.game_control_panel.img_scale_factor
+        control_group_names = utils.get_layout_control_group_names()
+        layout = config.game_control_panel.layout
 
-        for item in controls:
-            print(item)
-            print(type(item))
+        for group_name in control_group_names:
+            group_config = getattr(layout, group_name)
 
-        for item in controls:
-            name = item
-            layout = getattr(layout_all, name)
-            clickable = getattr(layout, 'clickable')
-            can_lock_mouse = getattr(layout, 'can_lock_mouse')
-            center = self.set_center(layout.pos)
-            img_name = layout.img
-            img_name_hover = layout.img_hover
-            title = None
+            # Init a list to loop over with tuples: (item, item_config)
+            central_control = None
+            left_control = None
+            right_control = None
+            top_control = None
+            central_config = None
+            left_config = None
+            right_config = None
+            top_config = None
 
-            if hasattr(layout, 'title'):
-                title = getattr(layout, 'title')
+            # Create control objects without overlays
+            if hasattr(getattr(layout, group_name), 'central'):
+                central_config = getattr(layout, group_name).central
+                central_control = self.build_control(central_config, img_scaling_factor)
 
-            item = Control(self, name, clickable, can_lock_mouse, img_name,
-                           img_name_hover, img_scale_factor, center, title)
+            if hasattr(getattr(layout, group_name), 'left'):
+                left_config = getattr(layout, group_name).left
+                left_control = self.build_control(left_config, img_scaling_factor)
 
-            if hasattr(layout, 'overlay'):
-                overlay = getattr(layout, 'overlay')
+            if hasattr(getattr(layout, group_name), 'right'):
+                right_config = getattr(layout, group_name).right
+                right_control = self.build_control(right_config, img_scaling_factor)
 
-                if overlay == 'viewer':
-                    overlay_w_ratio = layout.overlay_w_ratio
-                    overlay_h_ratio = layout.overlay_h_ratio
-                    overlay_x_offset = layout.overlay_x_offset
-                    overlay_y_offset = layout.overlay_y_offset
+            if hasattr(getattr(layout, group_name), 'top'):
+                top_config = getattr(layout, group_name).top
+                top_control = self.build_control(top_config, img_scaling_factor)
 
-                    item.overlay = Viewer(item.rect, overlay_w_ratio, overlay_h_ratio, self.font_name,
-                                          self.font_size_viewer, overlay_x_offset, overlay_y_offset)
-                elif overlay == 'value_bar':
-                    overlay_w_ratio = layout.overlay_w_ratio
-                    overlay_h_ratio = layout.overlay_h_ratio
-                    overlay_x_offset = layout.overlay_x_offset
-                    overlay_y_offset = layout.overlay_y_offset
+            # Move control objects to desired positions and build overlays
+            if central_control is not None:
+                # This is ratio based from layout yaml
+                center_pos = getattr(layout, group_name).center_pos
+                # Set absolute location based on display dimensions
+                center_pos = self.set_center(center_pos)
+                central_control.rect.center = center_pos
+                self.build_overlay(central_control, central_config)
+                self.add(central_control)
 
-                    item.overlay = ValueBar(item.rect, overlay_w_ratio, overlay_h_ratio, overlay_x_offset,
-                                            overlay_y_offset)
-            self.add(item)
+            if left_control is not None:
+                left_control.rect.midright = central_control.rect.midleft
+                left_control.rect.centery = central_control.rect.centery
+                self.build_overlay(left_control, left_config)
+                self.add(left_control)
+
+            if right_control is not None:
+                right_control.rect.midleft = central_control.rect.midright
+                right_control.rect.centery = central_control.rect.centery
+                self.build_overlay(right_control, right_config)
+                self.add(right_control)
+
+            if top_control is not None:
+                top_control.rect.bottom = central_control.rect.top - 1
+                top_control.rect.centerx = central_control.rect.centerx
+                self.build_overlay(top_control, top_config)
+                self.add(top_control)
+
+    def build_control(self, control_config, img_scaling_factor):
+        control = Control(self, control_config.name, control_config.clickable, control_config.can_lock_mouse,
+                          control_config.img, control_config.img_hover, img_scaling_factor)
+        return control
+
+    def build_overlay(self, control, control_config):
+        if hasattr(control_config, 'overlay'):
+            overlay_type = getattr(control_config, 'overlay')
+
+            if overlay_type == 'viewer':
+                overlay_w_ratio = control_config.overlay_w_ratio
+                overlay_h_ratio = control_config.overlay_h_ratio
+                overlay_x_offset = control_config.overlay_x_offset
+                overlay_y_offset = control_config.overlay_y_offset
+                control.overlay = Viewer(control.rect, overlay_w_ratio, overlay_h_ratio, self.font_name,
+                                         self.font_size_viewer, overlay_x_offset, overlay_y_offset)
+            elif overlay_type == 'value_bar':
+                overlay_w_ratio = control_config.overlay_w_ratio
+                overlay_h_ratio = control_config.overlay_h_ratio
+                overlay_x_offset = control_config.overlay_x_offset
+                overlay_y_offset = control_config.overlay_y_offset
+                control.overlay = ValueBar(control.rect, overlay_w_ratio, overlay_h_ratio, overlay_x_offset,
+                                           overlay_y_offset)
 
     def update_power(self, val):
         getattr(self, 'viewer_power').update_value(val)
@@ -121,24 +164,31 @@ class ControlPanel:
         getattr(self, 'viewer_angle').update_value(val)
 
     def update_weapon(self, name):
-        getattr(self, 'weapons_list').update_value("Plain bomb")
+        getattr(self, 'weapons_list').update_value(name)
+
+    def update_moves_left(self, val):
+        getattr(self, 'viewer_move').update_value(val)
+
+    def update_values(self, player: Tank):
+        self.update_angle(player.angle)
+        self.update_power(player.power)
+        self.update_moves_left(player.moves_left)
+        self.update_weapon(player.selected_weapon)
 
 
 # --- Base Class for a clickable item ---
 # Handles drawing control background and title, animation on hover / click
 # Child element can be a value viewer or a value bar with their own implementations and update mechanisms
-
-
 class Control(DirtySprite):
     def __init__(self, control_panel, name, clickable, can_lock_mouse,
-                 img_name, img_name_hover, img_scale_factor, center, title):
+                 img_name, img_name_hover, img_scale_factor):
         DirtySprite.__init__(self)
         self.control_panel = control_panel  # Reference parent for updating text on viewers etc.
         self.name = name
         self.clickable = clickable
         self.can_lock_mouse = can_lock_mouse
         self.saved_mouse_pos = None
-        self.title = title
+        # self.title = title
         self.overlay = None
         self.dirty = 1
         self.visible = 1
@@ -147,9 +197,7 @@ class Control(DirtySprite):
         self.image_regular = scale(utils.load_image_resource(img_name), img_scale_factor)
         self.image_hover = scale(utils.load_image_resource(img_name_hover), img_scale_factor)
         self.image = self.image_regular
-
         self.rect = self.image.get_rect()
-        self.rect.center = center
 
     def hover_on(self):
         self.image = self.image_hover
@@ -167,48 +215,27 @@ class Control(DirtySprite):
         self.rect.centery -= 2  # un-animate button depression
         self.dirty = 1
 
-    def click_down(self, current_player, pos):
+    def click_down(self, pos):
         lock_mouse_to_control = False
         if self.can_lock_mouse:
             lock_mouse_to_control = True
             if self.name == 'power_bar':
                 self.overlay.handle_click_down()
-            elif self.name == 'button_angle':
+            elif self.name == 'angle':
                 self.saved_mouse_pos = pos
                 # Temporarily set mouse (which is hidden at this point) to the center of the control panel
                 # to allow flexibility to move mouse either side.
                 pygame.mouse.set_pos(self.control_panel.rect.center)
+                # Also init the saved position so that the angle doesn't fly off upon first move
+                self.saved_mouse_pos = self.control_panel.rect.center
+
         else:
             self.animate_click()
         return lock_mouse_to_control
 
-    def click_up(self, actuate: bool, current_player):
+    def click_up(self, actuate: bool):
         if (not self.can_lock_mouse) and actuate:
             self.de_animate_click()
-            if self.name == 'button_angle_right':
-                angle = current_player.angle - 1
-                if angle < 0:
-                    angle = 359
-                self.control_panel.viewer_angle.overlay.update(angle)
-                current_player.update(angle=angle)
-            elif self.name == 'button_angle_left':
-                angle = current_player.angle + 1
-                if angle == 360:
-                    angle = 0
-                self.control_panel.viewer_angle.overlay.update(angle)
-                current_player.update(angle=angle)
-            elif self.name == 'button_power_dec':
-                power = current_player.power - 1
-                if power < 0:
-                    power = 0
-                self.control_panel.update_power(power)
-                current_player.power = power
-            elif self.name == 'button_power_inc':
-                power = current_player.power + 1
-                if power > 100:
-                    power = 100
-                self.control_panel.update_power(power)
-                current_player.power = power
 
     def update_value(self, val):
         self.overlay.update(val)
@@ -219,7 +246,7 @@ class Control(DirtySprite):
                                    self.overlay.rect.right) - self.overlay.rect.left) * 100 / self.overlay.rect.w)
             self.control_panel.update_power(val)
             current_player.power = val
-        elif self.name == 'button_angle':
+        elif self.name == 'angle':
             # We move the turret / angle based on mouse X-movement. The computation starts upon 'click_down' where
             # position is saved. The 'MOUSEMOVE' event pos is continuously compared to the previous saved position.
             pygame.event.set_blocked(pygame.MOUSEMOTION)
@@ -300,6 +327,8 @@ class Mouse(Sprite):
         self.rect.center = center
         self.prev_focused_control = None  # Used for deactivating hover animation
         self.clicked_control = None
+        # typing.cast(Control, self.clicked_control)  # To prevent unresolved reference to Control class methods.
+        # typing.cast(Control, self.clicked_control)
         self.locked = False
         self.saved_pos = None
 
@@ -308,4 +337,4 @@ def scale(surface, scaling_factor):
     rect = surface.get_rect()
     new_w = round(rect.w / scaling_factor)
     new_h = round(rect.h / scaling_factor)
-    return pygame.transform.scale(surface, (new_w, new_h))
+    return pygame.transform.smoothscale(surface, (new_w, new_h))
