@@ -84,8 +84,11 @@ class Tank(MovableAndRotatableObject):
     def move_on_terrain(self, pos_x):
         terrain_slope = self.get_slope_rads(pos_x)
         pos = self.get_center_above_terrain(pos_x, terrain_slope)
+        print('move_on_terrain: pos = ' + str(pos))
         self.move(pos)
+        print('move_on_terrain: self.move(pos): rect.center = ' + str(self.rect.center))
         self.rotate_ip(terrain_slope)
+        print('move_on_terrain: self.rotate_ip(pos): rect.center = ' + str(self.rect.center))
         self.turret.update()
         self.crosshair.update()
 

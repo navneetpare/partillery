@@ -31,10 +31,11 @@ class Game:
         self.rect = self.surf.get_rect()
         self.background = self.surf.copy()
         self.current_player = None
-        self.player_1 = None
-        self.player_2 = None
+        self.tank_1 = None
+        self.tank_2 = None
         self.cpl = None  # Control panel reference
-        pygame.display.update()
+        self.move_start_time = None
+        self.pos_x = None  # Util var to track tank moves
 
     def handle_exit_key(self, event: pygame.event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -44,12 +45,14 @@ class Game:
             pygame.quit()
             sys.exit()
 
+    # Button Actions
+
     def switch_player(self):
         self.current_player.crosshair.visible = 0
-        if self.current_player == self.player_1:
-            self.current_player = self.player_2
+        if self.current_player == self.tank_1:
+            self.current_player = self.tank_2
         else:
-            self.current_player = self.player_1
+            self.current_player = self.tank_1
         self.cpl.update_values(self.current_player)
         self.current_player.crosshair.visible = 1
 
@@ -67,12 +70,12 @@ class Game:
         self.cpl.update_angle(angle)
         self.current_player.update(angle=angle)
 
-    def power_dec (self):
+    def power_dec(self):
         power = max(self.current_player.power - 1, 0)
         self.cpl.update_power(power)
         self.current_player.power = power
 
-    def power_inc (self):
+    def power_inc(self):
         power = min(self.current_player.power + 1, 100)
         self.cpl.update_power(power)
         self.current_player.power = power
@@ -82,6 +85,8 @@ class Game:
             self.current_player.move_direction = -1
             self.current_player.moves_left -= 1
             self.mode = self.MODE_MOVE
+            self.pos_x = self.current_player.rect.centerx
+            self.move_start_time = pygame.time.get_ticks()
             self.cpl.update_moves_left(self.current_player.moves_left)
 
     def move_right(self):
@@ -89,6 +94,8 @@ class Game:
             self.current_player.move_direction = 1
             self.current_player.moves_left -= 1
             self.mode = self.MODE_MOVE
+            self.pos_x = self.current_player.rect.centerx
+            self.move_start_time = pygame.time.get_ticks()
             self.cpl.update_moves_left(self.current_player.moves_left)
 
     def fire(self):
@@ -100,6 +107,7 @@ class Game:
     def power_bar(self):
         pass
 
+    # Game Method
     def run(self):
         # Alias key params so I don't have to type 'self' everywhere.
         screen = self.screen
@@ -122,113 +130,102 @@ class Game:
         p1_x = random.randint(0 + tw, int(self.w / 2 - tw))  # random loc in left half of the game area
         p2_x = random.randint(int(self.w / 2) + tw, int(self.w - tw))  # random loc in right half of the game area
 
-        self.player_1 = Tank('Nav', 'red', 45, th, tw, p1_x, terr.y_coordinates, self.rect)
-        self.player_2 = Tank('CPU', 'blue', 120, th, tw, p2_x, terr.y_coordinates, self.rect)
+        self.tank_1 = Tank('Nav', 'red', 45, th, tw, p1_x, terr.y_coordinates, self.rect)
+        self.tank_2 = Tank('CPU', 'blue', 120, th, tw, p2_x, terr.y_coordinates, self.rect)
 
-        objects = LayeredDirty(self.player_1.turret, self.player_1, self.player_1.crosshair,
-                               self.player_2.turret, self.player_2, self.player_2.crosshair)
+        tanks = LayeredDirty(self.tank_1.turret, self.tank_1, self.tank_1.crosshair,
+                             self.tank_2.turret, self.tank_2, self.tank_2.crosshair)
 
         mouse = Mouse(self.cpl.rect.center)
-        self.current_player = self.player_1
+        self.current_player = self.tank_1
         self.current_player.crosshair.visible = 1
         self.cpl.update_values(self.current_player)
-        objects.draw(screen)
+        tanks.draw(screen)
         self.cpl.elements.draw(screen)
         pygame.display.update()
 
-        while 1:
-            while self.mode == self.MODE_CONTROL:
-                for event in pygame.event.get():
-                    self.handle_exit_key(event)
-                    pygame.event.clear()
-                    if event.type == pygame.MOUSEMOTION:
-                        mouse.rect.center = event.pos
-                        # Because 'spritecollideany' returns Sprite object instead of Control
-                        focused_control = typing.cast(Control, pygame.sprite.spritecollideany(mouse, self.cpl.controls))
-                        if not mouse.locked:
-                            if mouse.prev_focused_control == focused_control:
-                                pass
-                            else:
-                                if mouse.prev_focused_control is not None:
-                                    mouse.prev_focused_control.hover_off()
-                                if focused_control is not None:
-                                    focused_control.hover_on()
-                            mouse.prev_focused_control = focused_control
-                        else:
-                            mouse.clicked_control.handle_mouse_move(self.current_player, event.pos)
-
-                    elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                        # Because 'spritecollideany' returns Sprite object instead of Control
-                        focused_control = typing.cast(Control, pygame.sprite.spritecollideany(mouse, self.cpl.controls))
-                        mouse.clicked_control = focused_control
+        # Game modes
+        def enter_control_mode():
+            if event.type == pygame.MOUSEMOTION:
+                mouse.rect.center = event.pos
+                # Because 'spritecollideany' returns Sprite object instead of Control
+                focused_control = typing.cast(Control, pygame.sprite.spritecollideany(mouse, self.cpl.controls))
+                if not mouse.locked:
+                    if mouse.prev_focused_control == focused_control:
+                        pass
+                    else:
+                        if mouse.prev_focused_control is not None:
+                            mouse.prev_focused_control.hover_off()
                         if focused_control is not None:
-                            mouse.locked = focused_control.click_down(event.pos)
-                            if mouse.locked:
-                                mouse.saved_pos = event.pos
-                                pygame.mouse.set_visible(False)
+                            focused_control.hover_on()
+                    mouse.prev_focused_control = focused_control
+                else:
+                    mouse.clicked_control.handle_mouse_move(self.current_player, event.pos)
 
-                    elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                        if mouse.locked:
-                            pygame.mouse.set_pos(mouse.saved_pos)
-                        mouse.locked = False
-                        pygame.mouse.set_visible(True)
-                        focused_control = typing.cast(Control, pygame.sprite.spritecollideany(mouse, self.cpl.controls))
-                        if mouse.clicked_control is not None:
-                            # Actuate button on click up, only if the mouse has not moved away from
-                            # the button that was 'clicked down'.
-                            actuate = (focused_control == mouse.clicked_control)  # Boolean
-                            mouse.clicked_control.click_up(actuate)
-                            if actuate:
-                                # Call actuation method by name
-                                # E.g. if clicked_control.name = angle_inc, call method self.angle_inc()
-                                getattr(self, mouse.clicked_control.name)()
-                        mouse.clicked_control = None
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                # Because 'spritecollideany' returns Sprite object instead of Control
+                focused_control = typing.cast(Control, pygame.sprite.spritecollideany(mouse, self.cpl.controls))
+                mouse.clicked_control = focused_control
+                if focused_control is not None:
+                    mouse.locked = focused_control.click_down(event.pos)
+                    if mouse.locked:
+                        mouse.saved_pos = event.pos
+                        pygame.mouse.set_visible(False)
 
-                    sleep(0.015)
-                    self.cpl.elements.clear(screen, full_bg)
-                    objects.clear(screen, full_bg)
-                    dirty_rect_list = self.cpl.elements.draw(screen)
-                    pygame.display.update(dirty_rect_list)
-                    dirty_rect_list = objects.draw(screen)
-                    pygame.display.update(dirty_rect_list)
-                    clock.tick(frame_rate)
+            elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                if mouse.locked:
+                    pygame.mouse.set_pos(mouse.saved_pos)
+                mouse.locked = False
+                pygame.mouse.set_visible(True)
+                focused_control = typing.cast(Control, pygame.sprite.spritecollideany(mouse, self.cpl.controls))
+                if mouse.clicked_control is not None:
+                    # Actuate button on click up, only if the mouse has not moved away from
+                    # the button that was 'clicked down'.
+                    actuate = (focused_control == mouse.clicked_control)  # Boolean
+                    mouse.clicked_control.click_up(actuate)
+                    if actuate:
+                        # Call actuation method by name
+                        # E.g. if clicked_control.name = angle_inc, call method self.angle_inc()
+                        getattr(self, mouse.clicked_control.name)()
+                mouse.clicked_control = None
+            self.cpl.elements.clear(screen, full_bg)
+            tanks.clear(screen, full_bg)
+            dirty_rects = self.cpl.elements.draw(screen)
+            pygame.display.update(dirty_rects)
+            dirty_rects = tanks.draw(screen)
+            pygame.display.update(dirty_rects)
 
-            while self.mode == self.MODE_FLIGHT:
-                pygame.display.update()
-                clock.tick(frame_rate)
+        def enter_flight_mode():
+            pass
 
-            while self.mode == self.MODE_MOVE:
-                speed = self.current_player.move_direction
-                t0 = pygame.time.get_ticks()  # get start time
-                pos_x = self.current_player.rect.centerx
-                while (pygame.time.get_ticks() - t0) < config.game.move_duration_ms:
-                    pos_x += speed
-                    if pos_x >= (self.w - tw) or pos_x <= tw:
-                        done = True
-                        pygame.event.clear()
-                        break
-                    objects.clear(self.screen, game_bg)
-                    self.current_player.update(pos_x=pos_x)
-                    objects.draw(self.screen)
-                    pygame.display.update()
-                    clock.tick(frame_rate)
+        def enter_move_mode():
+            if (pygame.time.get_ticks() - self.move_start_time) < config.game.move_duration_ms:
+                self.pos_x += self.current_player.move_direction
+                if self.pos_x >= (self.w - tw / 2) or self.pos_x <= tw / 2:
+                    self.mode = self.MODE_CONTROL
+                else:
+                    tanks.clear(self.screen, game_bg)
+                    self.current_player.update(pos_x=self.pos_x)
+                    dirty_rects = tanks.draw(self.screen)
+                    pygame.display.update(dirty_rects)
+            else:
                 self.mode = self.MODE_CONTROL
 
-            while self.mode == self.MODE_TEST:
-                done = False
-                speed = 1
-                while not done:
-                    p1_x += speed
-                    p2_x -= speed
-                    if p1_x >= (self.w - tw) or p2_x <= tw:
-                        done = True
-                        break
+        # Game loop
+        while 1:
+            event = None
+            for retrieved_event in pygame.event.get([pygame.MOUSEBUTTONUP, pygame.MOUSEBUTTONDOWN,
+                                                     pygame.MOUSEMOTION, pygame.MOUSEWHEEL, pygame.KEYDOWN]):
+                event = retrieved_event
+                self.handle_exit_key(event)
 
-                    objects.clear(self.screen, game_bg)
-                    self.player_1.update(pos_x=p1_x)
-                    self.player_2.update(pos_x=p2_x)
-                    objects.draw(self.screen)
-                    pygame.display.update()
-                    pygame.event.clear()
-                    clock.tick(frame_rate)
-                    self.handle_exit_key(event)
+            if self.mode == self.MODE_CONTROL and event is not None:
+                enter_control_mode()
+
+            elif self.mode == self.MODE_FLIGHT:
+                enter_flight_mode()
+
+            elif self.mode == self.MODE_MOVE:
+                enter_move_mode()
+
+            clock.tick(frame_rate)
