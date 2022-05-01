@@ -1,7 +1,7 @@
 import pygame
 import math
 from partillery import utils
-from partillery.crosshair import CrossHair
+from partillery.old.crosshair_old import CrossHair
 
 col_turret = 200, 200, 200
 

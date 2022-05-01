@@ -2,21 +2,14 @@
 # https://towardsdatascience.com/the-little-known-ogrid-function-in-numpy-19ead3bdae40
 # https://stackoverflow.com/questions/44865023/how-can-i-create-a-circular-mask-for-a-numpy-array
 
-import math
 import os
-import random
-import sys
 from time import sleep
 import pygame
 import math
 from numpy import ogrid
 from numpy import sqrt
 
-from partillery.ammo import Ammo
-from partillery.controls_old import ControlPanel
-from partillery.player import Player
-from partillery.tank import Tank
-from partillery.terrain import Terrain
+from partillery.old.player_old import Player
 
 # Library Initialization
 pygame.init()

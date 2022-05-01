@@ -1,55 +1,20 @@
 import math
 
-from pygame import error, Surface, draw
+from pygame import Surface, draw
 from pygame.rect import Rect
 from pygame.sprite import DirtySprite
-from pygame.transform import rotate
 
 from partillery import utils
+from partillery.game.base_classes.base_element import BaseElement
+from partillery.game.terrain import Terrain
 
 
-# The background will be used for eraser.
-# The background will comprise of the sky + the terrain. It may be updated by explosions and other events
-# so we don't copy it but refer to it here. Python passes vars by ref.
-# The logic to update the background will be in the main game context.
-
-class MovableAndRotatableObject(DirtySprite):
-    def __init__(self, img):
-        DirtySprite.__init__(self)
-        self.image = utils.load_image_resource(img)
-        self.image_original = self.image.copy()
-        self.rect = self.image.get_rect()
-        self.dirty = 1
-
-    # In-place rotation
-    def rotate_ip(self, rads):
-        # self.erase()
-        try:
-            # The rotation is absolute, not relative, so we use the stored original image
-            # Also the original image is located at (0, 0) so it must be moved back to loc.
-            center = self.rect.center
-            self.image = rotate(self.image_original, math.degrees(rads))
-            self.rect = self.image.get_rect()
-            self.rect.center = center
-        except error:
-            utils.bell('Cannot rotate')
-            pass
-
-    def move(self, pos: tuple):
-        try:
-            self.rect.center = pos
-        except error:
-            utils.bell('Cannot move')
-
-    def bounce(self, self_vector, target_vector):
-        pass
-
-
-class Tank(MovableAndRotatableObject):
-    def __init__(self, name: str, col: str, angle: int, th: int, tw: int, pos_x: int,
-                 terr_y_coordinates, game_rect):
+class Tank(BaseElement):
+    def __init__(self, name: str, col: str, angle: int, terrain: Terrain, game_rect):
         img = 'tank_' + col + '.png'
-        MovableAndRotatableObject.__init__(self, img)
+        BaseElement.__init__(self, terrain, img)
+        self.w = self.rect.w
+        self.h = self.rect.h
         self.moves_left = 4
         self.move_direction = 1  # -1 == left, +1 = right
         self.game_rect = game_rect
@@ -58,20 +23,15 @@ class Tank(MovableAndRotatableObject):
         self.score = 0
         self.power = 50
         self.angle = angle
-        self.terr_y_coordinates = terr_y_coordinates
-        self.h = th
-        self.w = tw
         self.dirty = 2
         self.turret = Turret(self)
         self.crosshair = CrossHair(self)
         self.selected_weapon = "Plain bomb"
-        # Set initial position
-        self.update(pos_x=pos_x)
 
-    def get_center_above_terrain(self, x, angle_rads):
+    '''def get_center_above_terrain(self, x, angle_rads):
         y = self.terr_y_coordinates[x]
         x1 = int(self.h / 2 * math.cos(angle_rads + math.pi / 2) + x)
-        y1 = int(-(self.h / 2) * math.sin(angle_rads + math.pi / 2) + y)
+        y1 = int(-(self.h  / 2) * math.sin(angle_rads + math.pi / 2) + y)
         return x1, y1
 
     def get_slope_rads(self, x):
@@ -81,22 +41,19 @@ class Tank(MovableAndRotatableObject):
         # of the tank when going over curves and to get a more average slope across the width of the tank
         return math.atan(m)
 
-    def move_on_terrain(self, pos_x):
+    def roll_on_terrain(self, pos_x):
         terrain_slope = self.get_slope_rads(pos_x)
         pos = self.get_center_above_terrain(pos_x, terrain_slope)
-        print('move_on_terrain: pos = ' + str(pos))
         self.move(pos)
-        print('move_on_terrain: self.move(pos): rect.center = ' + str(self.rect.center))
-        self.rotate_ip(terrain_slope)
-        print('move_on_terrain: self.rotate_ip(pos): rect.center = ' + str(self.rect.center))
-        self.turret.update()
-        self.crosshair.update()
+        self.rotate(terrain_slope)'''
 
     def update(self, **kwargs):
         super().update()
 
         if "pos_x" in kwargs:
-            self.move_on_terrain(kwargs["pos_x"])
+            self.roll_on_terrain(kwargs["pos_x"])
+            self.turret.update()
+            self.crosshair.update()
 
         if "angle" in kwargs:
             self.angle = kwargs["angle"]
@@ -110,7 +67,7 @@ class Turret(DirtySprite):
         # We give it a dedicated surface w = h = tw (saved as orig)
         # This will be fully transparent and copied to new every time updated. To be centered with the tank.
         self.tank = tank  # Refer to parent for easy access
-        self.len = self.tank.w
+        self.len = self.tank.w * 1.2
         self.bg = Surface((self.len, self.len)).convert_alpha()
         self.bg.fill((255, 255, 255, 0))  # fully transparent
         self.image = None
@@ -120,10 +77,17 @@ class Turret(DirtySprite):
         self.dirty = 0
         self.update()
 
-    def get_nose(self):
+    def get_relative_nose(self):
+        # This nose is relative to turret img only
         angle_radians = math.radians(self.tank.angle)
         x = (self.rect.w / 2) + (self.len * math.cos(angle_radians))
         y = (self.rect.h / 2) - (self.len * math.sin(angle_radians))
+        return x, y
+
+    def get_absolute_nose(self):
+        angle_radians = math.radians(self.tank.angle)
+        x = self.tank.rect.centerx + (self.len * math.cos(angle_radians))
+        y = self.tank.rect.centery + - (self.len * math.sin(angle_radians))
         return x, y
 
     def update(self):
@@ -131,7 +95,7 @@ class Turret(DirtySprite):
         self.image = self.bg.copy()
         self.rect = self.image.get_rect()
         self.rect.center = self.tank.rect.center
-        self.nose = self.get_nose()
+        self.nose = self.get_relative_nose()
         draw.line(self.image, (255, 255, 255, 255), (self.rect.w / 2, self.rect.h / 2), self.nose, 2)
         self.dirty = 1
 
@@ -164,6 +128,3 @@ class CrossHair(DirtySprite):
         else:
             self.rect.center = clipped[1]
         self.dirty = 1
-
-
-

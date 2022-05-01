@@ -16,8 +16,7 @@ game_control_panel:
   img_scale_factor: 4.4
   background_img: control_panel.png
   font_name: expressway.ttf
-  font_size_viewer: 13
-  font_size_title: 15
+  font_size_viewer: 16
 
   # For buttons, windows etc.
   # pos : position variable indicates relative offsets from the top left corner of the control panel

@@ -7,13 +7,11 @@ import sys
 from time import sleep
 import pygame
 
-from partillery.ammo.ammo import Ammo
-from partillery.controls_old import ControlPanel
-from partillery.player import Player
-from partillery.tank import Tank
-from partillery.terrain import Terrain
-from partillery.explosion import Explosion
-
+from partillery.old.ammo_old import Ammo
+from partillery.old.controls_old import ControlPanel
+from partillery.old.player_old import Player
+from partillery.old.tank_old import Tank
+from partillery.game.terrain import Terrain
 
 # Library Initialization
 pygame.init()
@@ -110,12 +108,12 @@ def get_tank_center(x, angle):
 # Initialize Display Elements
 
 pygame.display.set_caption("Partillery")
-pygame.display.set_icon(pygame.image.load("resources/images/window_icon.png"))
+pygame.display.set_icon(pygame.image.load("../resources/images/window_icon.png"))
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (100, 40)
 screen = pygame.display.set_mode((display_w, display_h), pygame.RESIZABLE)
 screen_rect = screen.get_rect()
 screen.fill(col_screen)
-play_img = pygame.image.load("resources/images/night_starry_blue.png").convert_alpha()
+play_img = pygame.image.load("../resources/images/night_starry_blue.png").convert_alpha()
 gamesurf = pygame.transform.scale(play_img, (game_w, game_h))
 gamesurf_bk = gamesurf.copy()
 gamesurf_rect = gamesurf.get_rect()
@@ -129,7 +127,7 @@ cpl = ControlPanel(screen, game_l, game_b, game_w, display_h - game_h, control_s
 
 n1 = pygame.time.get_ticks()
 terr = Terrain(screen, game_w, game_h, 'Random')
-screen.blit(terr.surf, (0, 0))
+screen.blit(terr.image, (0, 0))
 
 tank1_x = random.randint(game_l, ((game_r - game_l) / 2) - tank_w)  # random x location
 # tank1_x = 32

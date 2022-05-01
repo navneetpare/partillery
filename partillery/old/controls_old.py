@@ -13,8 +13,7 @@ default_power_val = 50
 
 class ControlPanel:
     def __init__(self, screen: pygame.Surface, cpl_x, cpl_y, cpl_w, cpl_h, control_scale):
-
-        control_img = pygame.image.load("resources/images/control_panel.png").convert()
+        control_img = pygame.image.load("../resources/images/control_panel.png").convert()
         self.surf = pygame.transform.scale(control_img, (cpl_w, cpl_h))
         self.rect = self.surf.get_rect()
         self.rect.x = cpl_x
@@ -22,7 +21,6 @@ class ControlPanel:
         screen.blit(self.surf, (cpl_x, cpl_y))
 
         # add and draw control elements
-
 
         '''sec_w = cpl_w / 5
         wp_x = sec_w
@@ -44,12 +42,12 @@ class ControlPanel:
 
         wp_img = pygame.image.load("resources/images/ammo_list.png")
         angle_img = pygame.image.load("resources/images/param_window.png")
-        angle_dec_img = pygame.image.load("resources/images/button_inc.png")
-        angle_inc_img = pygame.image.load("resources/images/button_dec.png")
+        angle_dec_img = pygame.image.load("../resources/images/button_inc.png")
+        angle_inc_img = pygame.image.load("../resources/images/button_dec.png")
         power_img = pygame.image.load("resources/images/param_window.png")
-        power_bar_img = pygame.image.load("resources/images/power_bar.png")
-        power_inc_img = pygame.image.load("resources/images/button_inc.png")
-        power_dec_img = pygame.image.load("resources/images/button_dec.png")
+        power_bar_img = pygame.image.load("../resources/images/power_bar.png")
+        power_inc_img = pygame.image.load("../resources/images/button_inc.png")
+        power_dec_img = pygame.image.load("../resources/images/button_dec.png")
         fire_img = pygame.image.load("resources/images/param_window.png")
         fire_text_img = pygame.image.load("resources/images/fire_text.png")
         scoreboard_frame = pygame.image.load("resources/images/scoreboard_frame.png")
@@ -89,9 +87,11 @@ class ControlPanel:
         self.power.center = (power_x + fire_x) / 2, control_baseline_y
         # self.power_bar.center = (power_x + fire_x) / 2, (control_baseline_y + self.rect.bottom) / 2
         # The 0.995 to place bar is irritating; need to fix
-        self.power_bar.center = (power_x + fire_x) / 2, 0.995*(self.power.bottom + self.rect.bottom) / 2
-        self.angle_inc.center = ((angle_x + power_x) / 2) - self.angle_inc.w / 4 - self.angle_sel.w / 2, control_baseline_y
-        self.angle_dec.center = ((angle_x + power_x) / 2) + self.angle_dec.w / 4 + self.angle_sel.w / 2, control_baseline_y
+        self.power_bar.center = (power_x + fire_x) / 2, 0.995 * (self.power.bottom + self.rect.bottom) / 2
+        self.angle_inc.center = (((angle_x + power_x) / 2) - self.angle_inc.w / 4 - self.angle_sel.w / 2,
+                                 control_baseline_y)
+        self.angle_dec.center = (((angle_x + power_x) / 2) + self.angle_dec.w / 4 + self.angle_sel.w / 2,
+                                 control_baseline_y)
         self.power_dec.center = ((power_x + fire_x) / 2) - self.power_dec.w / 4 - self.power.w / 2, control_baseline_y
         self.power_inc.center = ((power_x + fire_x) / 2) + self.power_inc.w / 4 + self.power.w / 2, control_baseline_y
         self.fire.center = (fire_x + (fire_x + sec_w)) / 2, (self.rect.y + self.rect.h / 2)
@@ -147,7 +147,8 @@ class ControlPanel:
 
         self.angle_heading = self.font_heading.render("Angle", True, col_text_white)
         self.angle_heading_rect = self.angle_heading.get_rect()
-        self.angle_heading_rect.center = (self.angle_viewer_rect.centerx, (self.angle_viewer_rect.top + self.rect.top) / 2)
+        self.angle_heading_rect.center = (
+            self.angle_viewer_rect.centerx, (self.angle_viewer_rect.top + self.rect.top) / 2)
 
         self.power_text = self.font_param.render(str(default_power_val), True, col_text_white, col_screen)
         self.power_text_rect = self.power_text.get_rect()
@@ -155,7 +156,8 @@ class ControlPanel:
 
         self.power_heading = self.font_heading.render("Power", True, col_text_white)
         self.power_heading_rect = self.power_heading.get_rect()
-        self.power_heading_rect.center = (self.power_viewer_rect.centerx, (self.power_viewer_rect.top + self.rect.top) / 2)
+        self.power_heading_rect.center = (
+            self.power_viewer_rect.centerx, (self.power_viewer_rect.top + self.rect.top) / 2)
 
         self.wp_text = self.font_param.render("Plain ammo", True, col_text_white, col_screen)
         self.wp_text_rect = self.wp_text.get_rect()
@@ -167,12 +169,12 @@ class ControlPanel:
 
         self.scoreboard_heading = self.font_param.render("Scoreboard", True, col_text_white)
         self.scoreboard_heading_rect = self.scoreboard_heading.get_rect()
-        self.scoreboard_heading_rect.center = (self.score_viewer_rect.centerx, self.score_viewer_rect.top + self.score_viewer_rect.h / 9)
+        self.scoreboard_heading_rect.center = (
+            self.score_viewer_rect.centerx, self.score_viewer_rect.top + self.score_viewer_rect.h / 9)
 
         '''self.fire_text = self.font.render("Fire", True, col_fire)
         self.fire_text_rect = self.fire_text.get_rect()
         self.fire_text_rect.center = self.fire.center'''
-
 
         # draw control elements
 
@@ -218,7 +220,8 @@ class ControlPanel:
         screen.blits(((self.power_viewer, self.power_viewer_rect), (self.power_text, self.power_text_rect)), 0)
         # redraw power bar fill
         pygame.draw.rect(screen, col_screen, (self.fill_x, self.fill_y, self.fill_w, self.fill_h))
-        self.power_bar_fill_rect = pygame.draw.rect(screen, col_power, (self.fill_x, self.fill_y, self.fill_w * (val / 100), self.fill_h))
+        self.power_bar_fill_rect = pygame.draw.rect(screen, col_power,
+                                                    (self.fill_x, self.fill_y, self.fill_w * (val / 100), self.fill_h))
 
 
 def scale(surface, scaling_factor):

@@ -3,7 +3,7 @@ import sys
 
 import pygame
 import partillery.utils as utils
-from partillery.context.game import Game
+from partillery.game.game import Game
 
 
 class Root:

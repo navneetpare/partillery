@@ -1,34 +1,28 @@
 # References for animating buttons
 # https://stackoverflow.com/questions/601776/what-do-the-blend-modes-in-pygame-mean
 # https://stackoverflow.com/questions/57962130/how-can-i-change-the-brightness-of-an-image-in-pygame
-import typing
 
 import pygame
 from pygame import Surface
 from pygame.sprite import DirtySprite, LayeredDirty, Sprite
 
 import partillery.utils as utils
-from partillery.core_sprites import Tank
+from partillery.game.tank import Tank
 
 
-class ControlPanel:
-    def __init__(self, screen, x, y, w, h, config):
+class ControlPanel(LayeredDirty):
+    def __init__(self, x, y, w, h, config):
+        LayeredDirty.__init__(self)
         img_name = config.game_control_panel.background_img
         image = utils.load_image_resource(img_name)
         self.font_name = config.game_control_panel.font_name
-        self.font_size_title = config.game_control_panel.font_size_title
         self.font_size_viewer = config.game_control_panel.font_size_viewer
-        self.font = utils.load_font_resource(self.font_name, self.font_size_title)
-        self.screen = screen
         self.image = pygame.transform.scale(image, (w, h))
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        self.elements = LayeredDirty()  # For drawing updates
+        # self.elements = LayeredDirty()  # For drawing updates
         self.controls = LayeredDirty()  # Only add interactive elements
-
-        # Create controls and other elements
-        self.screen.blit(self.image, self.rect)
 
         # Create objects and adds them to elements list. Also adds controls as direct ControlPanel attributes
         # e.g. cpl.power_bar
@@ -44,10 +38,10 @@ class ControlPanel:
         y = int(y_offset_percent * self.rect.h + self.rect.top)
         return x, y
 
-    def add(self, control):
-        self.elements.add(control)
+    def add_control(self, control):
+        self.add(control)
         if control.overlay is not None:
-            self.elements.add(getattr(control, 'overlay'))
+            self.add(getattr(control, 'overlay'))
         if control.clickable:
             self.controls.add(control)
 
@@ -57,13 +51,6 @@ class ControlPanel:
             y = int((control.rect.top + self.rect.top) / 2)
             self.draw_title((x, y), str(control.title))
             # Draw the title once and for all. It is not a sprite and won't be updated ever.'''
-
-    def draw_title(self, pos: tuple, text: str):
-        text_surf = self.font.render(text, True, (255, 255, 255))
-        text_surf_rect = text_surf.get_rect()
-        text_surf_rect.center = pos
-        self.screen.blit(text_surf, text_surf_rect)
-        pygame.display.update()
 
     def build(self, config):
         # Create control items as string objects from config
@@ -75,7 +62,6 @@ class ControlPanel:
         layout = config.game_control_panel.layout
 
         for group_name in control_group_names:
-            group_config = getattr(layout, group_name)
 
             # Init a list to loop over with tuples: (item, item_config)
             central_control = None
@@ -112,25 +98,25 @@ class ControlPanel:
                 center_pos = self.set_center(center_pos)
                 central_control.rect.center = center_pos
                 self.build_overlay(central_control, central_config)
-                self.add(central_control)
+                self.add_control(central_control)
 
             if left_control is not None:
                 left_control.rect.midright = central_control.rect.midleft
                 left_control.rect.centery = central_control.rect.centery
                 self.build_overlay(left_control, left_config)
-                self.add(left_control)
+                self.add_control(left_control)
 
             if right_control is not None:
                 right_control.rect.midleft = central_control.rect.midright
                 right_control.rect.centery = central_control.rect.centery
                 self.build_overlay(right_control, right_config)
-                self.add(right_control)
+                self.add_control(right_control)
 
             if top_control is not None:
                 top_control.rect.bottom = central_control.rect.top - 1
                 top_control.rect.centerx = central_control.rect.centerx
                 self.build_overlay(top_control, top_config)
-                self.add(top_control)
+                self.add_control(top_control)
 
     def build_control(self, control_config, img_scaling_factor):
         control = Control(self, control_config.name, control_config.clickable, control_config.can_lock_mouse,
@@ -281,7 +267,7 @@ class Viewer(DirtySprite):
 
     def update(self, text):
         self.image.fill((0, 0, 0))
-        text_surf = self.font.render(str(text), True, (255, 255, 255), (0, 0, 0))
+        text_surf = self.font.render(str(text), True, (255, 210, 0), (0, 0, 0))
         text_surf_rect = text_surf.get_rect()
         # We take relative center of the viewer instead of absolute position
         # Because we will blit to viewer surf instead of screen.

@@ -1,6 +1,5 @@
 import pygame
-from partillery.explosion import Explosion
-import numpy as np
+from partillery.game.base_classes.explosionold import ExplosionOld
 
 
 class Ammo(pygame.sprite.Sprite):
@@ -52,7 +51,7 @@ class Ammo(pygame.sprite.Sprite):
             screen.blit(self.surf, self.rect)  # draw self to new loc
 
         if collides:
-            Explosion(screen, playsurf_bk, terrain_mask, self.prev_pos, 50, None)  # not at current ammo loc but old one
+            ExplosionOld(screen, playsurf_bk, terrain_mask, self.prev_pos, 50, None)  # not at current ammo loc but old one
 
         if (x > playsurf_rect.right) or (x + self.w < playsurf_rect.left) or collides:
             alive = False
