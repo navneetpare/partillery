@@ -3,7 +3,7 @@ import sys
 import typing
 
 import pygame
-from pygame.sprite import LayeredDirty
+from pygame.sprite import LayeredDirty, Group
 from partillery import utils
 from partillery.game.base_classes.weapon import Weapon, WeaponFragment
 from partillery.game.control_panel import ControlPanel, Mouse, Control
@@ -13,17 +13,18 @@ from partillery.game.terrain import Terrain
 
 class Game:
     def __init__(self, screen, resolution, restore_resolution, clock, config):
+        self.fire_count = 0
         self.resolution = resolution
         self.restore_resolution = restore_resolution
         self.name = "Game"
-        self.MODE_CONTROL = 0
-        self.MODE_FLIGHT = 1
+        self.MODE_FIRE_CONTROL = 0
+        self.MODE_FIRE = 1
         self.MODE_MOVE = 2
         self.MODE_TEST = 3
         self.screen = screen
         self.clock = clock
         self.config = config
-        self.mode = self.MODE_CONTROL
+        self.mode = self.MODE_FIRE_CONTROL
         self.h = int(resolution[1] * config.game.height_fraction)
         self.w = resolution[0]
 
@@ -33,11 +34,14 @@ class Game:
         # Used as a background for turret, crosshair and tank moves. Explosions cut this surface
         # The terrain will be drawn on this.
         self.scene = self.sky.copy()
+        # Rects for limiting display updates, e.g. explosions overlapping control panel.
+        self.scene_rect = self.sky.get_rect()
+        self.scene.set_clip(self.scene_rect)
+
         # Used as a full screen background for control panel once all intial elements are drawn
         self.full_bg = None
-        # Rects for limiting display updates, e.g. explosions overlapping control panel.
-        self.rect = self.sky.get_rect()
-        self.screen_rect = pygame.Rect((0, 0), self.resolution)  # For screen clipping
+
+        self.rect = pygame.Rect((0, 0), self.resolution)  # For screen clipping
         self.terrain = None
         self.current_player = None
         self.player_1 = None
@@ -47,6 +51,8 @@ class Game:
         self.cpl = None  # Control panel reference
         self.move_start_time = None
         self.pos_x = None  # Util var to track tank moves
+        self.weapon = None  # The actual weapon object
+        self.weapon_choice = None  # The weapon selected from the object
 
     def handle_exit_key(self, event: pygame.event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -56,9 +62,27 @@ class Game:
             pygame.quit()
             sys.exit()
 
+    def redraw(self, weapon=False, tanks=False, controls=False):
+        # print('weapon: ' + str(weapon) + ' tanks: ' + str(tanks) + ' controls: ' + str(controls))
+        t0 = pygame.time.get_ticks()
+        if weapon is True:
+            self.weapon.clear(self.screen, self.scene)
+            rects = self.weapon.draw(self.screen)
+            pygame.display.update(rects)
+        if tanks is True:
+            self.tank_elements.clear(self.screen, self.scene)
+            rects = self.tank_elements.draw(self.screen)
+            pygame.display.update(rects)
+        if controls is True:
+            self.cpl.clear(self.screen, self.full_bg)
+            rects = self.cpl.draw(self.screen)
+            pygame.display.update(rects)
+        # print('draw time:' + str(pygame.time.get_ticks() - t0))
+
     def update_scoreboard(self):
-        self.cpl.scoreboard.overlay.update(str(self.player_1.name) + " : " + str(self.player_1.score) + "        " +
+        self.cpl.scoreboard.overlay.update(str(self.player_1.name) + " : " + str(self.player_1.score) + "     " +
                                            str(self.player_2.name) + " : " + str(self.player_2.score))
+        print("scoreboard: " + str(self.player_1.score) + " / " + str(self.player_2.score))
         pygame.display.update()
 
     # Button Actions
@@ -114,27 +138,8 @@ class Game:
             self.cpl.update_moves_left(self.current_player.moves_left)
 
     def fire(self):
-        self.screen.set_clip(self.rect)
-        weapon = Weapon(self)
-        t0 = pygame.time.get_ticks()
-        start_pos = self.current_player.turret.get_absolute_nose()
-        power = self.current_player.power * 1000 / 100
-        g = -500
-        weaponFragment1 = WeaponFragment('ammo_4.gif', weapon, self.terrain, 0, 5, 0, 0, None,
-                                         start_pos, self.current_player.angle, power, g, t0)
-        # weaponFragment2 = WeaponFragment('ammo_4.gif', weapon, self.terrain, 0, 5, 0, 0, None,
-                                         # start_pos, self.current_player.angle + 10, power, g, t0 + 50)
-        weapon.add(weaponFragment1)
-        # weapon.add(weaponFragment2)
-        weapon.fire()
-        weapon.empty()
-        self.screen.set_clip(self.screen_rect)
-        self.update_scoreboard()
-        # self.players.clear(self.screen, self.scene)
-        # tank_rects = self.players.draw(self.screen)
-        # pygame.display.update()
-        # pygame.display.update(tank_rects)
-        # self.switch_player()
+        self.fire_count += 1
+        self.mode = self.MODE_FIRE
 
     def angle(self):
         pass
@@ -177,13 +182,12 @@ class Game:
         screen.blit(self.scene, (0, 0))
         screen.blit(self.cpl.image, self.cpl.rect)
         self.full_bg = screen.copy()  # Capture the screen to be used as bg for controls
-        self.cpl.draw(screen)
-        self.tank_elements.draw(screen)
-        pygame.display.update()
         self.update_scoreboard()
+        print('first scoreboard update')
+        self.redraw(tanks=True, controls=True)
 
         # Game modes
-        def enter_control_mode():
+        def fire_control_mode():
             if event.type == pygame.MOUSEMOTION:
                 mouse.rect.center = event.pos
                 # Because 'spritecollideany' returns Sprite object instead of Control
@@ -226,28 +230,46 @@ class Game:
                         # E.g. if clicked_control.name = angle_inc, call method self.angle_inc()
                         getattr(self, mouse.clicked_control.name)()
                 mouse.clicked_control = None
-            self.cpl.clear(screen, self.full_bg)
-            self.tank_elements.clear(screen, screen)
-            dirty_rects = self.cpl.draw(screen)
-            pygame.display.update(dirty_rects)
-            dirty_rects = self.tank_elements.draw(screen)
-            pygame.display.update(dirty_rects)
 
-        def enter_flight_mode():
-            pass
+            self.redraw(tanks=True, controls=True)
 
-        def enter_move_mode():
+        def fire_mode():
+            # self.screen.set_clip(self.rect)
+            self.weapon = Weapon(self)
+            t0 = pygame.time.get_ticks()
+            start_pos = self.current_player.turret.get_absolute_nose()
+            power = self.current_player.power * 1000 / 100
+            g = -500
+            weaponFragment1 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, 0, 5, 0, 0, None,
+                                             start_pos, self.current_player.angle, power, g, t0)
+            # weaponFragment2 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, 0, 5, 0, 0, None,
+                                             #start_pos, self.current_player.angle + 10, power, g, t0)
+            self.weapon.add(weaponFragment1)
+            # self.weapon.add(weaponFragment2)
+            self.weapon.fire()
+            self.weapon.empty()
+            self.screen.set_clip(self.rect)
+            self.update_scoreboard()
+            self.redraw(tanks=True, controls=True)
+            # self.switch_player()
+            # self.players.clear(self.screen, self.scene)
+            # tank_rects = self.players.draw(self.screen)
+            # pygame.display.update()
+            # pygame.display.update(tank_rects)
+            # self.switch_player()
+
+        def move_mode():
             if (pygame.time.get_ticks() - self.move_start_time) < config.game.move_duration_ms:
                 self.pos_x += self.current_player.move_direction
                 if self.pos_x >= (self.w - tw / 2) or self.pos_x <= tw / 2:
-                    self.mode = self.MODE_CONTROL
+                    self.mode = self.MODE_FIRE_CONTROL
                 else:
                     self.tank_elements.clear(self.screen, self.scene)
                     self.current_player.update(pos_x=self.pos_x)
                     dirty_rects = self.tank_elements.draw(self.screen)
                     pygame.display.update(dirty_rects)
             else:
-                self.mode = self.MODE_CONTROL
+                self.mode = self.MODE_FIRE_CONTROL
 
         # Game loop
         while 1:
@@ -257,13 +279,13 @@ class Game:
                 event = retrieved_event
                 self.handle_exit_key(event)
 
-            if self.mode == self.MODE_CONTROL and event is not None:
-                enter_control_mode()
+            if self.mode == self.MODE_FIRE_CONTROL and event is not None:
+                fire_control_mode()
 
-            elif self.mode == self.MODE_FLIGHT:
-                enter_flight_mode()
+            elif self.mode == self.MODE_FIRE:
+                fire_mode()
 
             elif self.mode == self.MODE_MOVE:
-                enter_move_mode()
+                move_mode()
 
             clock.tick(config.display.frame_rate)

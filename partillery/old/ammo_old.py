@@ -1,5 +1,5 @@
 import pygame
-from partillery.game.base_classes.explosionold import ExplosionOld
+from partillery.old.explosionold import ExplosionOld
 
 
 class Ammo(pygame.sprite.Sprite):

@@ -172,7 +172,7 @@ def generate(w, h, terrain_type):
         y_arr = y_arr.astype(int, 'K', 'unsafe', True, True)
 
     elif terrain_type == 'Flat':
-        y_arr = np.ones(w)*400
+        y_arr = np.ones(w)*480
 
     return y_arr  # only need the y coords; x is implicit as array index - 1
 

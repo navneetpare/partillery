@@ -74,7 +74,7 @@ class Turret(DirtySprite):
         self.rect = None
         self.nose = None
         self.visible = 1
-        self.dirty = 0
+        self.dirty = 2
         self.update()
 
     def get_relative_nose(self):
@@ -97,7 +97,6 @@ class Turret(DirtySprite):
         self.rect.center = self.tank.rect.center
         self.nose = self.get_relative_nose()
         draw.line(self.image, (255, 255, 255, 255), (self.rect.w / 2, self.rect.h / 2), self.nose, 2)
-        self.dirty = 1
 
 
 class CrossHair(DirtySprite):

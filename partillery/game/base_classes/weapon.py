@@ -6,7 +6,7 @@ import pygame
 from pygame.sprite import LayeredDirty
 
 from partillery.game.base_classes.base_element import BaseElement
-from partillery.game.base_classes.explosionold import BaseExplosion
+from partillery.game.base_classes.explosion import BaseExplosion
 from partillery.game.tank import Tank
 
 
@@ -39,6 +39,9 @@ class WeaponFragment(BaseElement):
     def update(self):
         self.projectile_motion()
 
+    def explode(self):
+        return self.rect.center
+
     def launch(self):
         self.t0 = pygame.time.get_ticks()
         self.alive = True
@@ -68,6 +71,32 @@ class Weapon(LayeredDirty):
     def spawn(self):
         pass
 
+    '''def fire(self):
+        while len(self) > 0:
+            self.update()
+            explosions = []
+            explosion_threads = []
+            explosions.extend(self.handle_tank_collisions())
+            explosions.extend(self.handle_terrain_collisions())
+
+            for pos in explosions:
+                explosion_threads.append(Thread(target=BaseExplosion,
+                                                args=(self.game, pos, 80, 1500)))
+            for thread in explosion_threads:
+                thread.start()
+
+        self.clear(self.game.screen, self.game.scene)
+        self.game.tank_elements.clear(self.game.screen, self.game.scene)
+        areas1 = self.game.tank_elements.draw(self.game.screen)
+        areas2 = self.draw(self.game.screen)
+        pygame.display.update(areas1)
+        pygame.display.update(areas2)
+
+        self.game.mode = self.game.MODE_FIRE_CONTROL
+        self.game.cpl.clear(self.game.screen, self.game.screen)
+        areas = self.game.cpl.draw(self.game.screen)
+        pygame.display.update(areas)'''
+
     def fire(self):
         while len(self) > 0:
             self.update()
@@ -76,23 +105,20 @@ class Weapon(LayeredDirty):
             explosions.extend(self.handle_tank_collisions())
             explosions.extend(self.handle_terrain_collisions())
 
-            for location in explosions:
+            for pos in explosions:
                 explosion_threads.append(Thread(target=BaseExplosion,
-                                                args=(self.game.screen, self.game.sky, self.game.terrain,
-                                                      location, 30, 3500)))
+                                                args=(self.game, pos, 60, 500)))
             for thread in explosion_threads:
                 thread.start()
-            self.clear(self.game.screen, self.game.screen)
-            self.game.tank_elements.clear(self.game.screen, self.game.screen)
-            areas1 = self.game.tank_elements.draw(self.game.screen)
-            areas2 = self.draw(self.game.screen)
-            pygame.display.update(areas1)
-            pygame.display.update(areas2)
+            self.game.redraw(weapon=True, tanks=True)
 
-        self.game.mode = self.game.MODE_CONTROL
-        self.game.cpl.clear(self.game.screen, self.game.screen)
-        areas = self.game.cpl.draw(self.game.screen)
-        pygame.display.update(areas)
+            for thread in explosion_threads:
+                thread.join()
+
+        self.game.mode = self.game.MODE_FIRE_CONTROL
+        # self.game.cpl.clear(self.game.screen, self.game.s)
+        # areas = self.game.cpl.draw(self.game.screen)
+        # pygame.display.update(areas)
 
     def handle_tank_collisions(self):
         # dokill = True for weaponlet removes it from weaponlets collisions = pygame.sprite.groupcollide(self,
@@ -111,17 +137,16 @@ class Weapon(LayeredDirty):
                     self.game.current_player.score += fragment.damage_score
                 explosions.append(fragment.rect.center)
                 self.remove(fragment)
-                del fragment
         return explosions
 
     def handle_terrain_collisions(self):
         explosions = []
         for fragment in self:
-            if self.game.terrain.mask.overlap(typing.cast(WeaponFragment, fragment).mask, fragment.rect.topleft) \
+            fragment = typing.cast(WeaponFragment, fragment)
+            if self.game.terrain.mask.overlap(fragment.mask, fragment.rect.topleft) \
                     or fragment.rect.bottom > self.game.h:
                 self.remove(fragment)
-                explosions.append(fragment.rect.center)
-                del fragment
+                explosions.append(fragment.explode())
         return explosions
 
     # container for its elements

@@ -67,10 +67,11 @@ class ExplosionOld:
         # pygame.draw.circle(playsurf, (255, 150, 0, int(t % i)), center, i, 1)
 
 
-class BaseExplosion:
-    def __init__(self, screen, sky: pygame.Surface, terrain: Terrain, pos: tuple, radius: int, lifespan: int):
+class BaseExplosionOld:
+    def __init__(self, screen, scene, sky: pygame.Surface, terrain: Terrain, pos: tuple, radius: int, lifespan: int):
         self.screen = screen
         self.sky = sky
+        self.scene = scene
         self.terrain = terrain
         self.pos = pos
         self.radius = radius
@@ -112,7 +113,7 @@ class BaseExplosion:
         while exp_speed * t < self.radius:  # milliseconds
             for i in range(1, int(exp_speed * t)):
                 # pygame.draw.circle(self.screen, (255, 150, 0, int(255 * math.pow(i % 10, 2) / 225)), self.pos, i, 1)
-                pygame.draw.circle(self.screen, (255, 150, 0, int(255 * (1 + math.cos(i / 3)) / 2)), self.pos, i, 1)
+                pygame.draw.circle(self.scene, (255, 150, 0, int(255 * (1 + math.cos(i / 3)) / 2)), self.pos, i, 1)
 
             pygame.display.update(exp_rect)
             t = pygame.time.get_ticks() - t0
