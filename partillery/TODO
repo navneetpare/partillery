@@ -1,32 +1,18 @@
 Issues
 ----------
 
-1) When tank moves - the turret must be deleted before moving
-2) Random init location of tank - must not fall outside or intersect with play window
-3) Explosion, deletes tank too.
-4) Explosion may partially fall outside the window - gives a rect error
-6) grab combo eraser for tank whenever movement stops
+[x] When tank moves - the turret must be deleted before moving
+[x] Random init location of tank - must not fall outside or intersect with play window
+[x] Explosion, deletes tank too.
+[x] Explosion may partially fall outside the window - gives a rect error
+[ ] Tank fall after explosion
 
-Pending features
+Features
 ----------
-1) Explosion animation types
-2) Ammo types
-3) Tank move at will
-4) Tank fall after explosion
-5) Terrain fall after explosion
 
+[ ] Explosion animation types
+[ ] Ammo type
 
-GIMP:
---------------------
-All dimensions should be even nos and multiple of 16
-Height Layer: 6a6a6a
-Face Layer: 626262
-Face Layer: Shrink by fixed pixels:16
-Rounding: fixed pixels 16
-
-
-# Weapons
-------------------------
 
 
 

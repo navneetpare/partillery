@@ -72,5 +72,10 @@ class BaseExplosion:
             else:
                 self.done = True
 
-        game.screen.blit(self.cut_out, self.clipped_rect)
+        try:
+            game.screen.blit(self.cut_out, self.clipped_rect)
+        except TypeError:
+            pass
         pygame.display.update(self.clipped_rect)
+
+

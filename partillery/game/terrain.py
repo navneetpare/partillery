@@ -3,8 +3,11 @@
 # http://geomalgorithms.com/a13-_intersect-4.html
 
 # 11/04/2020 - Divide the terrain vertically into slats. Each will have its own mask.
+import time
+from collections import OrderedDict
 
 import pygame
+from pygame import Rect
 import math
 import random
 import numpy as np
@@ -27,7 +30,7 @@ b2 = 152, 112, 80
 b3 = 112, 80, 48
 b4 = 56, 16, 0
 
-d1_for_purple = 21,21,21
+d1_for_purple = 21, 21, 21
 
 # Coefficients for the main noise generator
 a = [15731, 16703, 23143, 19843, 12744, 97586, 36178, 88412, 78436, 78436, 96653, 12598, 32158, 98764, 11579, 65989,
@@ -98,6 +101,7 @@ def generate(w, h, terrain_type):
 
     if terrain_type == "Random":
         terrain_type = random.choice(['Valley', 'Hill', 'Cliff'])
+        terrain_type = 'Hill'
         interpolation_type = 'linear'  # Default
         # Hill
         if terrain_type == "Hill":
@@ -172,7 +176,7 @@ def generate(w, h, terrain_type):
         y_arr = y_arr.astype(int, 'K', 'unsafe', True, True)
 
     elif terrain_type == 'Flat':
-        y_arr = np.ones(w)*480
+        y_arr = np.ones(w) * 480
 
     return y_arr  # only need the y coords; x is implicit as array index - 1
 
@@ -183,10 +187,74 @@ def generate(w, h, terrain_type):
     # plt.show()
 
 
+def get_display_update_area(area):
+    return Rect(area.left, 0, area.w, area.bottom)
+
+
+def get_optimal_display_update_areas(columns: OrderedDict):
+    contiguous_columns = []
+    rect_list = []
+    if len(columns) > 0:
+        cols = columns.items()
+        done = False
+        x_start = next(iter(cols))[0]   # first x in cols
+        x_prev = x_start
+        x_end = next(reversed(cols))[0]
+        cols = columns.items()
+        for x, (bottom, top) in cols:
+            if x == x_start:
+                pass
+            elif x == x_end:
+                contiguous_columns.append((x_start, x))
+            else:
+                if x - x_prev == 1:
+                    x_prev = x
+                else:
+                    contiguous_columns.append((x_start, x_prev))
+                    x_start = x
+                    x_prev = x
+
+        if len(contiguous_columns) > 0:
+            for i in range(len(contiguous_columns)):
+                current_tuple = contiguous_columns[i]
+
+                x = current_tuple[0]    # left edge
+                w = current_tuple[1] - current_tuple[0]
+
+                # find highest y in contiguous column
+                top = None
+                bottom = None
+                for j in range(current_tuple[0], current_tuple[1] +1):  # +1 to include rightmost column too
+                    current_bottom = columns[current_tuple[0]][0]
+                    current_top = columns[current_tuple[0]][1]
+                    if j == current_tuple[0]:
+                        top = current_top
+                        bottom = current_bottom
+                    else:
+                        if current_bottom > bottom:  # check bottoms
+                            bottom = current_bottom
+                        if current_top < top:
+                            top = current_top
+
+                y = top
+                h = bottom - top
+                rect = Rect(x, y, w, h)
+                rect_list.append(rect)
+                print(rect)
+                print(top)
+                print(bottom)
+
+    print(contiguous_columns)
+    return rect_list
+
+
 class Terrain:
-    def __init__(self, game_w, game_h, terrain_type):
+    def __init__(self, game, game_w, game_h, terrain_type):
         # Create a layer for terrain, with per-pixel alpha allowed
+        self.falling = False
+        self.game = game
         self.w = game_w
+        self.game_h = game_h
         self.image = pygame.Surface((game_w, game_h), pygame.SRCALPHA)
         self.y_coordinates = generate(game_w, game_h, terrain_type)  # only y coords
         x = np.arange(1, game_w + 1, 1)  # just temp
@@ -200,7 +268,7 @@ class Terrain:
         for i in range(1, 3):
             m = np.column_stack((x, y))
             # pygame.draw.lines(self.surf, b1, False, m)
-            pygame.draw.aalines(self.image, (170, 170, 170), False, m)
+            pygame.draw.aalines(self.image, (150, 150, 150), False, m)
             y += 1
             y.clip(0, game_h)
         '''for i in range(21, 40):
@@ -226,3 +294,73 @@ class Terrain:
         # get mask after drawing complete
         self.mask = pygame.mask.from_surface(self.image, 254)
 
+    def fall(self, area: pygame.Rect):
+        if area is not None:
+            print('game_h:' + str(self.game_h))
+            columns = self.get_columns_with_holes(area)
+            update_area = get_display_update_area(area)
+
+            deleted_columns = []
+            while len(columns) > 0:
+                for x in deleted_columns:
+                    del columns[x]  # Remove columns queued for removal
+                deleted_columns.clear()  # empty the list to prevent re-deletion error
+                for x, (bottom, top) in columns.items():  # For each column
+                    i = 0
+
+                    bottom_new = min(bottom, self.game_h-2)  # exlude pixels which touch game bottom
+                    for y in range(bottom_new, top - 2, -1):  # shift down all pixels in the column
+                        i += self.fall_pixel((x, y))
+
+                    if i == 0:  # if nothing moved in the column:
+                        deleted_columns.append(x)  # queue the column for removal
+
+                    else:
+                        columns[x] = (bottom, top + 1)
+                        self.y_coordinates[x] += 1
+
+                pygame.display.update(update_area)
+
+    def get_columns_with_holes(self, area: pygame.Rect):
+        columns = OrderedDict()
+        # Find list of x where terrain has holes
+        for x in range(area.left, area.right):
+            has_terrain = False
+            has_hole = False
+            top = None
+            bottom = None
+            for y in range(0, area.bottom):
+                if self.mask.get_at((x, y)) == 1:
+                    has_terrain = True
+                    top = y
+                    break
+            if top is not None:
+                for y in range(top, area.bottom):
+                    if self.mask.get_at((x, y)) == 0:
+                        has_hole = True
+                        break
+                for y in range(area.bottom, top, -1):
+                    if self.mask.get_at((x, y)) == 0:
+                        bottom = y
+                        break
+            if has_terrain and has_hole:
+                columns.update({x: (bottom, top)})
+        return columns
+
+    def fall_pixel(self, pixel):
+        # print('pixel: ' + str(pixel))
+        pixel_below = pixel[0], pixel[1] + 1
+        mask_pixel = self.mask.get_at(pixel)
+        mask_below = self.mask.get_at(pixel_below)
+        if mask_below == 0:  # If no terrain below
+            self.mask.set_at(pixel_below, mask_pixel)  # shift terrain pixel mask
+            self.mask.set_at(pixel, 0)  # Leave transparency behind for the next pixel to fall
+            if mask_pixel == 0:
+                col = self.game.sky.get_at(pixel)
+            else:
+                col = self.game.screen.get_at(pixel)
+            self.game.screen.set_at(pixel_below, col)
+            self.game.scene.set_at(pixel_below, col)
+            return 1
+        else:
+            return 0

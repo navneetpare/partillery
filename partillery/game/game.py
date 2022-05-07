@@ -5,7 +5,7 @@ import typing
 import pygame
 from pygame.sprite import LayeredDirty, Group
 from partillery import utils
-from partillery.game.base_classes.weapon import Weapon, WeaponFragment
+from partillery.game.base_classes.weapon import Weapon, WeaponFragment, get_explosions_bounding_area
 from partillery.game.control_panel import ControlPanel, Mouse, Control
 from partillery.game.tank import Tank
 from partillery.game.terrain import Terrain
@@ -36,13 +36,14 @@ class Game:
         self.scene = self.sky.copy()
         # Rects for limiting display updates, e.g. explosions overlapping control panel.
         self.scene_rect = self.sky.get_rect()
-        self.scene.set_clip(self.scene_rect)
+        # self.scene.set_clip(self.scene_rect)
 
         # Used as a full screen background for control panel once all intial elements are drawn
         self.full_bg = None
 
         self.rect = pygame.Rect((0, 0), self.resolution)  # For screen clipping
         self.terrain = None
+        self.terrain_falling = False  # To track terrain fall after explosions.
         self.current_player = None
         self.player_1 = None
         self.player_2 = None
@@ -82,7 +83,7 @@ class Game:
     def update_scoreboard(self):
         self.cpl.scoreboard.overlay.update(str(self.player_1.name) + " : " + str(self.player_1.score) + "     " +
                                            str(self.player_2.name) + " : " + str(self.player_2.score))
-        print("scoreboard: " + str(self.player_1.score) + " / " + str(self.player_2.score))
+        # print("scoreboard: " + str(self.player_1.score) + " / " + str(self.player_2.score))
         pygame.display.update()
 
     # Button Actions
@@ -155,7 +156,7 @@ class Game:
         config = self.config
 
         # ------ Create the terrain
-        self.terrain = Terrain(self.w, self.h, 'Flat')
+        self.terrain = Terrain(self, self.w, self.h, 'Random')
 
         # ------ Create the control panel and controls
         self.cpl = ControlPanel(0, self.h, self.w, self.resolution[1] - self.h, config)
@@ -183,7 +184,6 @@ class Game:
         screen.blit(self.cpl.image, self.cpl.rect)
         self.full_bg = screen.copy()  # Capture the screen to be used as bg for controls
         self.update_scoreboard()
-        print('first scoreboard update')
         self.redraw(tanks=True, controls=True)
 
         # Game modes
@@ -238,19 +238,35 @@ class Game:
             self.weapon = Weapon(self)
             t0 = pygame.time.get_ticks()
             start_pos = self.current_player.turret.get_absolute_nose()
-            power = self.current_player.power * 1000 / 100
+            v = self.current_player.power * 1000 / 100
             g = -500
-            weaponFragment1 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, 0, 5, 0, 0, None,
-                                             start_pos, self.current_player.angle, power, g, t0)
-            # weaponFragment2 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, 0, 5, 0, 0, None,
-                                             #start_pos, self.current_player.angle + 10, power, g, t0)
+            weaponFragment1 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
+                                             self.current_player.angle, t0, v=v, g=g, explosion_radius=60)
+
+            weaponFragment2 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
+                                             self.current_player.angle + 1, t0, v=v, g=g, explosion_radius=60)
+
+            weaponFragment3 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
+                                             self.current_player.angle + 2, t0, v=v, g=g, explosion_radius=60)
+
+            weaponFragment4 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
+                                             self.current_player.angle - 1, t0, v=v, g=g, explosion_radius=60)
+
+            weaponFragment5 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
+                                             self.current_player.angle - 2, t0, v=v, g=g, explosion_radius=60)
+
             self.weapon.add(weaponFragment1)
-            # self.weapon.add(weaponFragment2)
-            self.weapon.fire()
-            self.weapon.empty()
+            self.weapon.add(weaponFragment2)
+            self.weapon.add(weaponFragment3)
+            self.weapon.add(weaponFragment4)
+            self.weapon.add(weaponFragment5)
+            explosions_area = self.weapon.fire()
+            print('back in game loop')
+            self.terrain.fall(explosions_area)
             self.screen.set_clip(self.rect)
             self.update_scoreboard()
             self.redraw(tanks=True, controls=True)
+            self.mode = self.MODE_FIRE_CONTROL
             # self.switch_player()
             # self.players.clear(self.screen, self.scene)
             # tank_rects = self.players.draw(self.screen)

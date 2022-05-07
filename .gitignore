@@ -1,4 +1,5 @@
 /.idea
+.gitignore
 __pycache__
 canvas*
 *.xcf
