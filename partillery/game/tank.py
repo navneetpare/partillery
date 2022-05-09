@@ -1,5 +1,7 @@
 import math
+import time
 
+import pygame.time
 from pygame import Surface, draw
 from pygame.rect import Rect
 from pygame.sprite import DirtySprite
@@ -10,15 +12,16 @@ from partillery.game.terrain import Terrain
 
 
 class Tank(BaseElement):
-    def __init__(self, name: str, col: str, angle: int, terrain: Terrain, game_rect):
+    def __init__(self, game, name: str, col: str, angle: int, terrain: Terrain, g):
         img = 'tank_' + col + '.png'
-        BaseElement.__init__(self, terrain, img)
+        BaseElement.__init__(self, terrain, img, g=g)
+        self.game = game
         self.w = self.rect.w
         self.h = self.rect.h
         self.moves_left = 4
         self.move_direction = 1  # -1 == left, +1 = right
-        self.game_rect = game_rect
-        self.top_clamp = game_rect.top
+        # self.game_rect = game_rect
+        # self.top_clamp = game_rect.top
         self.name = name
         self.score = 0
         self.power = 50
@@ -27,6 +30,7 @@ class Tank(BaseElement):
         self.turret = Turret(self)
         self.crosshair = CrossHair(self)
         self.selected_weapon = "Plain bomb"
+        self.resting = False
 
     '''def get_center_above_terrain(self, x, angle_rads):
         y = self.terr_y_coordinates[x]
@@ -50,8 +54,8 @@ class Tank(BaseElement):
     def update(self, **kwargs):
         super().update()
 
-        if "pos_x" in kwargs:
-            self.roll_on_terrain(kwargs["pos_x"])
+        if "roll_to" in kwargs:
+            self.roll_to(kwargs["roll_to"])
             self.turret.update()
             self.crosshair.update()
 
@@ -59,6 +63,33 @@ class Tank(BaseElement):
             self.angle = kwargs["angle"]
             self.turret.update()
             self.crosshair.update()
+
+        if "fall" in kwargs:
+            self.fall()
+
+    def fall(self):
+        self.projectile_launch(0, 0, pygame.time.get_ticks(), self.rect.center)
+        while self.terrain.is_falling or self.is_projectile:
+            if not self.on_terrain():
+                # print('not on terrain')
+                self.projectile_motion()
+                self.turret.update()
+                self.crosshair.update()
+                self.game.redraw(tanks=True)
+                if self.on_terrain():
+                    self.update(roll_to=self.rect.centerx)
+                    print('rolled')
+                    self.is_projectile = False
+            else:
+                self.is_projectile = False
+
+    def handle_terrain_collisions(self):
+        if self.on_terrain():
+            self.is_projectile = False
+            self.update(roll_to=self.rect.centerx)
+
+    def on_terrain(self):
+        return self.game.terrain.mask.overlap(self.mask, self.rect.topleft) or self.rect.bottom >= self.game.h - 1
 
 
 class Turret(DirtySprite):
@@ -100,7 +131,7 @@ class Turret(DirtySprite):
 
 
 class CrossHair(DirtySprite):
-    def __init__(self, tank):
+    def __init__(self, tank: Tank):
         super().__init__()
         # We give it a dedicated surface w = h = tw (saved as orig)
         # This will be fully transparent and copied to new every time updated. To be centered with the tank.
@@ -110,8 +141,8 @@ class CrossHair(DirtySprite):
         self.rect = self.image.get_rect()
         w = self.rect.w  # w = h for cross-hair, so we'll reuse it.
         # Define area where cross-hair can move. Half width to be cropped out of game area.
-        self.clip_rect = Rect(self.tank.game_rect.left + w / 2, self.tank.game_rect.top + w / 2,
-                              self.tank.game_rect.w - w, self.tank.game_rect.h - w)
+        self.clip_rect = Rect(self.tank.game.scene_rect.left + w / 2, self.tank.game.scene_rect.top + w / 2,
+                              self.tank.game.scene_rect.w - w, self.tank.game.scene_rect.h - w)
         self.visible = 0
         self.dirty = 0
 
@@ -119,8 +150,6 @@ class CrossHair(DirtySprite):
         angle_radians = math.radians(self.tank.angle)
         x = self.tank.rect.centerx + (self.distance * math.cos(angle_radians))
         y = self.tank.rect.centery - (self.distance * math.sin(angle_radians))
-        # x = utils.clamp(x, self.tank.game_rect.left + self.tank.w / 2, self.tank.game_rect.right - self.tank.w /2)
-        # y = utils.clamp(y, self.tank.game_rect.top, self.tank.game_rect.bottom)
         clipped = self.clip_rect.clipline(self.tank.rect.center, (x, y))
         if not clipped:
             self.rect.center = x, y

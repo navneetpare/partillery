@@ -4,6 +4,7 @@
 
 # 11/04/2020 - Divide the terrain vertically into slats. Each will have its own mask.
 import time
+import timeit
 from collections import OrderedDict
 
 import pygame
@@ -98,11 +99,12 @@ def generate(w, h, terrain_type):
     ws = w / 8  # width segment
     inflexion_points = None
     y_arr = None
+    interpolation_type = 'linear'  # Default
 
     if terrain_type == "Random":
         terrain_type = random.choice(['Valley', 'Hill', 'Cliff'])
-        terrain_type = 'Hill'
-        interpolation_type = 'linear'  # Default
+        # terrain_type = 'Hill'
+        # interpolation_type = 'linear'  # Default
         # Hill
         if terrain_type == "Hill":
             p100 = 0, random.randint(5.5 * hs, 7.5 * hs)  # left edge
@@ -134,7 +136,7 @@ def generate(w, h, terrain_type):
 
         # Cliff
         elif terrain_type == "Cliff":
-            interpolation_type = 'linear'
+            # interpolation_type = 'linear'
             ch = random.randint(2 * hs, 3.5 * hs)  # cliff height
             bh = random.randint(5.5 * hs, 7.5 * hs)  # base height
             if random.choice(['fall', 'rise']) == 'fall':  # slope
@@ -197,7 +199,7 @@ def get_optimal_display_update_areas(columns: OrderedDict):
     if len(columns) > 0:
         cols = columns.items()
         done = False
-        x_start = next(iter(cols))[0]   # first x in cols
+        x_start = next(iter(cols))[0]  # first x in cols
         x_prev = x_start
         x_end = next(reversed(cols))[0]
         cols = columns.items()
@@ -218,13 +220,13 @@ def get_optimal_display_update_areas(columns: OrderedDict):
             for i in range(len(contiguous_columns)):
                 current_tuple = contiguous_columns[i]
 
-                x = current_tuple[0]    # left edge
+                x = current_tuple[0]  # left edge
                 w = current_tuple[1] - current_tuple[0]
 
                 # find highest y in contiguous column
                 top = None
                 bottom = None
-                for j in range(current_tuple[0], current_tuple[1] +1):  # +1 to include rightmost column too
+                for j in range(current_tuple[0], current_tuple[1] + 1):  # +1 to include rightmost column too
                     current_bottom = columns[current_tuple[0]][0]
                     current_top = columns[current_tuple[0]][1]
                     if j == current_tuple[0]:
@@ -251,14 +253,15 @@ def get_optimal_display_update_areas(columns: OrderedDict):
 class Terrain:
     def __init__(self, game, game_w, game_h, terrain_type):
         # Create a layer for terrain, with per-pixel alpha allowed
-        self.falling = False
+        self.is_falling = False
         self.game = game
         self.w = game_w
         self.game_h = game_h
         self.image = pygame.Surface((game_w, game_h), pygame.SRCALPHA)
         self.y_coordinates = generate(game_w, game_h, terrain_type)  # only y coords
         x = np.arange(1, game_w + 1, 1)  # just temp
-        self.points = np.column_stack((x, self.y_coordinates))
+        # self.points = np.array((x, self.y_coordinates)).T
+        self.points = None
 
         # temp y array which will be moved downwards for painting layers of terrain
         y = np.array(self.y_coordinates)  # for fast numpy methods
@@ -268,7 +271,7 @@ class Terrain:
         for i in range(1, 3):
             m = np.column_stack((x, y))
             # pygame.draw.lines(self.surf, b1, False, m)
-            pygame.draw.aalines(self.image, (150, 150, 150), False, m)
+            pygame.draw.lines(self.image, (150, 150, 150), False, m)
             y += 1
             y.clip(0, game_h)
         '''for i in range(21, 40):
@@ -293,9 +296,79 @@ class Terrain:
 
         # get mask after drawing complete
         self.mask = pygame.mask.from_surface(self.image, 254)
+        self.compute_initial_points()
+
+    def recompute(self, area: pygame.Rect):
+        if area is not None:
+            for x in range(area.left, area.right + 1):
+                found_terrain = False
+                for y in range(area.top -2, area.bottom + 1):
+                    try:
+                        if self.mask.get_at((x, y)) == 1:
+                            self.y_coordinates[x] = y
+                            # print('recompute: ' + str((x, y)))
+                            found_terrain = True
+                            break
+                    except IndexError:
+                        pass
+                if not found_terrain:
+                    self.y_coordinates[x] = self.game_h
+
+    def recompute2(self):
+        bottom = self.game_h - 1
+        right = self.w - 1
+        left = 1
+        start_deleting = False
+        start_x = None
+        points = self.mask.outline()
+
+    def compute_initial_points(self):
+        outline = self.mask.outline()
+        index_of_right = None
+        index_of_left = None
+        for i in range(len(outline)):
+            if outline[i][0] == self.w-1 and index_of_right is None:
+                index_of_right = i
+                print('right : ' + str(index_of_right))
+                if index_of_left is None:
+                    for j in range(i, -len(outline), -1):
+                        if outline[j][0] == 2 and index_of_left is None:
+                            index_of_left = j-1
+                            print('left : ' + str(index_of_left))
+                            break
+                break
+            elif outline[i][0] == 1 and index_of_left is None:
+                index_of_left = i
+                print('left : ' + str(index_of_left))
+                for j in range(i, len(outline)):
+                    if outline[j][0] == self.w-1 and index_of_right is None:
+                        index_of_right = j
+                        print('right : ' + str(index_of_right))
+                        break
+                break
+
+        if index_of_left < 0:
+            self.points = outline[index_of_left:]
+            new = outline[1:index_of_right+1]
+            self.points.extend(new)
+        else:
+            self.points = outline[index_of_left:index_of_right+1]
+
+        print('points: ' + str(self.points))
+
+    def get_point(self, x):
+        for point in self.points:
+            if point[0] == x:
+                return point
+
+    def get_point_index(self, x):
+        for i in range(len(self.points)):
+            if self.points[i][0] == x:
+                return i
 
     def fall(self, area: pygame.Rect):
         if area is not None:
+            self.is_falling = True
             print('game_h:' + str(self.game_h))
             columns = self.get_columns_with_holes(area)
             update_area = get_display_update_area(area)
@@ -308,7 +381,7 @@ class Terrain:
                 for x, (bottom, top) in columns.items():  # For each column
                     i = 0
 
-                    bottom_new = min(bottom, self.game_h-2)  # exlude pixels which touch game bottom
+                    bottom_new = min(bottom, self.game_h - 2)  # exlude pixels which touch game bottom
                     for y in range(bottom_new, top - 2, -1):  # shift down all pixels in the column
                         i += self.fall_pixel((x, y))
 
@@ -320,6 +393,8 @@ class Terrain:
                         self.y_coordinates[x] += 1
 
                 pygame.display.update(update_area)
+
+            self.is_falling = False
 
     def get_columns_with_holes(self, area: pygame.Rect):
         columns = OrderedDict()

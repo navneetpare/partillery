@@ -1,16 +1,19 @@
 import pygame
 
-from partillery import utils
-
 
 class BaseExplosion:
     def __init__(self, game, pos: tuple, radius: int, lifespan: int):
+        print('explosion top: ' + str((pos[0], pos[1] + radius)))
+        print('explosion center: ' + str(pos))
+        print('explosion bottom: ' + str((pos[0], pos[1] - radius)))
+
         self.exp_rect = None
         self.cut_out = None
         self.done = False
         self.clipped_rect = None
         exp_speed = radius / lifespan  # pixels per 1000 ms
         t0 = pygame.time.get_ticks()
+        colour = (255, 170, 0, 255)
 
         while not self.done:
             t = pygame.time.get_ticks() - t0
@@ -23,7 +26,7 @@ class BaseExplosion:
                     self.exp_rect.center = pos
 
                     # ---- Draw opaque explosion on temp surf
-                    pygame.draw.circle(exp_surf, (255, 170, 0, 255), (self.exp_rect.w / 2, self.exp_rect.h / 2), r)
+                    pygame.draw.circle(exp_surf, colour, (self.exp_rect.w / 2, self.exp_rect.h / 2), r)
 
                     # TODO Desciption of the clipping and cropping code.
                     self.clipped_rect = self.exp_rect.clip(game.scene_rect)
@@ -73,9 +76,8 @@ class BaseExplosion:
                 self.done = True
 
         try:
+            pass
             game.screen.blit(self.cut_out, self.clipped_rect)
         except TypeError:
             pass
         pygame.display.update(self.clipped_rect)
-
-

@@ -1,7 +1,8 @@
 import random
 import sys
+import time
 import typing
-
+from threading import Thread
 import pygame
 from pygame.sprite import LayeredDirty, Group
 from partillery import utils
@@ -154,6 +155,7 @@ class Game:
         screen = self.screen
         clock = self.clock
         config = self.config
+        g = config.physics.gravity
 
         # ------ Create the terrain
         self.terrain = Terrain(self, self.w, self.h, 'Random')
@@ -162,13 +164,13 @@ class Game:
         self.cpl = ControlPanel(0, self.h, self.w, self.resolution[1] - self.h, config)
 
         # ------ Create tank objects, move them and draw onto screen
-        self.player_1 = Tank('Nav', 'red', 45, self.terrain, self.rect)
-        self.player_2 = Tank('CPU', 'blue', 120, self.terrain, self.rect)
+        self.player_1 = Tank(self, 'Nav', 'red', 45, self.terrain, g)
+        self.player_2 = Tank(self, 'CPU', 'blue', 120, self.terrain, g)
         tw = self.player_1.rect.w
         p1_x = random.randint(0 + tw, int(self.w / 2 - tw))  # random loc in left half of the game area
         p2_x = random.randint(int(self.w / 2) + tw, int(self.w - tw))  # random loc in right half of the game area
-        self.player_1.update(pos_x=p1_x)
-        self.player_2.update(pos_x=p2_x)
+        self.player_1.update(roll_to=p1_x)
+        self.player_2.update(roll_to=p2_x)
         self.tank_elements = LayeredDirty(self.player_1.turret, self.player_1, self.player_1.crosshair,
                                           self.player_2.turret, self.player_2, self.player_2.crosshair)
         self.tanks = LayeredDirty(self.player_1, self.player_2)
@@ -239,30 +241,41 @@ class Game:
             t0 = pygame.time.get_ticks()
             start_pos = self.current_player.turret.get_absolute_nose()
             v = self.current_player.power * 1000 / 100
-            g = -500
+            g = config.physics.gravity
             weaponFragment1 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
-                                             self.current_player.angle, t0, v=v, g=g, explosion_radius=60)
+                                             self.current_player.angle, t0=t0, v=v, g=g, explosion_radius=60)
 
-            weaponFragment2 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
-                                             self.current_player.angle + 1, t0, v=v, g=g, explosion_radius=60)
-
-            weaponFragment3 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
-                                             self.current_player.angle + 2, t0, v=v, g=g, explosion_radius=60)
-
-            weaponFragment4 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
-                                             self.current_player.angle - 1, t0, v=v, g=g, explosion_radius=60)
-
-            weaponFragment5 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
-                                             self.current_player.angle - 2, t0, v=v, g=g, explosion_radius=60)
+            # weaponFragment2 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
+            #                                  self.current_player.angle + 1, t0, v=v, g=g, explosion_radius=60)
+            #
+            # weaponFragment3 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
+            #                                  self.current_player.angle + 2, t0, v=v, g=g, explosion_radius=60)
+            #
+            # weaponFragment4 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
+            #                                  self.current_player.angle - 1, t0, v=v, g=g, explosion_radius=60)
+            #
+            # weaponFragment5 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
+            #                                  self.current_player.angle - 2, t0, v=v, g=g, explosion_radius=60)
 
             self.weapon.add(weaponFragment1)
-            self.weapon.add(weaponFragment2)
-            self.weapon.add(weaponFragment3)
-            self.weapon.add(weaponFragment4)
-            self.weapon.add(weaponFragment5)
+            # self.weapon.add(weaponFragment2)
+            # self.weapon.add(weaponFragment3)
+            # self.weapon.add(weaponFragment4)
+            # self.weapon.add(weaponFragment5)
             explosions_area = self.weapon.fire()
-            print('back in game loop')
+            self.terrain.recompute(explosions_area)
+            # terrain_fall_thread = Thread(target=self.terrain.fall, args=[explosions_area])
+            # tank_fall_thread = Thread(target=self.current_player.fall)
+            # # self.terrain.fall(explosions_area)
+            #
+            # terrain_fall_thread.start()
+            # tank_fall_thread.start()
+            # terrain_fall_thread.join()
+            # tank_fall_thread.join()
             self.terrain.fall(explosions_area)
+            if self.fire_count == 110:
+                self.terrain.mask.to_surface(screen, setcolor=(0,255,0,80), unsetcolor=None)
+            self.tanks.update(fall=True)
             self.screen.set_clip(self.rect)
             self.update_scoreboard()
             self.redraw(tanks=True, controls=True)
@@ -281,7 +294,7 @@ class Game:
                     self.mode = self.MODE_FIRE_CONTROL
                 else:
                     self.tank_elements.clear(self.screen, self.scene)
-                    self.current_player.update(pos_x=self.pos_x)
+                    self.current_player.update(roll_to=self.pos_x)
                     dirty_rects = self.tank_elements.draw(self.screen)
                     pygame.display.update(dirty_rects)
             else:

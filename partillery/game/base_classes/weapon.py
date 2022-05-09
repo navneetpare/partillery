@@ -1,5 +1,4 @@
 import typing
-from math import cos, sin, radians
 
 from threading import Thread
 import pygame
@@ -11,30 +10,22 @@ from partillery.game.tank import Tank
 
 
 class WeaponFragment(BaseElement):
-    def __init__(self, img, parent, terrain, start_pos, start_angle, t0, v=0, g=0,
+    def __init__(self, img, parent, terrain, start_pos, angle, t0=None, v=0, g=0,
                  explosion_radius=60, kick=0, damage_score=1, mass=0, bounciness=0,
                  explosion_type=BaseExplosion):
-        BaseElement.__init__(self, terrain, img)
+        BaseElement.__init__(self, terrain, img, g=g, mass=mass, bounciness=bounciness)
         self.explosion_type = explosion_type
         self.explosion_radius = explosion_radius
         self.damage_score = damage_score
-        self.start_pos = start_pos
-        self.start_angle = start_angle
-        self.v_x = v * cos(radians(start_angle))  # initial speed_x
-        self.v_y = v * sin(radians(start_angle))  # initial speed_y
-        self.g = g
         self.parent = parent
-        self.mass = mass
-        self.bounciness = bounciness
         self.kick = kick
         self.explosion = None
-        self.alive = True
-        self.last_pos = start_pos
-        self.t0 = t0  # set at launch time
         self.visible = 1
 
+        self.projectile_launch(v, angle, t0, start_pos)
+
     def update(self):
-        self.projectile_motion()
+        self.projectile_motion(kill=True)  # Base element method
 
     def explode(self):
         return self.rect.center, self.explosion_radius, self.explosion_type
@@ -42,18 +33,6 @@ class WeaponFragment(BaseElement):
     def launch(self):
         self.t0 = pygame.time.get_ticks()
         self.alive = True
-
-    def projectile_motion(self):
-        if self.alive:
-            t = (pygame.time.get_ticks() - self.t0) / 1000
-            pos_x = self.start_pos[0] + self.v_x * t  # No horizontal acceleration
-            pos_y = self.start_pos[1] - (self.v_y * t + (0.5 * self.g * (t ** 2)))
-            if self.move((pos_x, pos_y)):
-                self.last_pos = (pos_x, pos_y)
-                self.dirty = 1
-            else:
-                self.alive = False
-                self.kill()
 
     def bounce_off_terrain(self):
         pass
@@ -69,7 +48,6 @@ class Weapon(LayeredDirty):
         pass
 
     def fire(self):
-        explosions_alive = False
         explosions = []
         explosion_threads = []
 
@@ -131,7 +109,7 @@ class Weapon(LayeredDirty):
         for fragment in self:
             fragment = typing.cast(WeaponFragment, fragment)
             if self.game.terrain.mask.overlap(fragment.mask, fragment.rect.topleft) \
-                    or fragment.rect.bottom > self.game.h:
+                    or fragment.rect.bottom >= self.game.h - 1:
                 self.remove(fragment)
                 explosions.append(fragment.explode())
         return explosions
@@ -139,16 +117,17 @@ class Weapon(LayeredDirty):
 
 def get_explosions_bounding_area(explosions, scene_rect):
     # 'explosions' is a list of tuples (center, explosion_radius, explosion_type)
-    rect = None
-    for i in range(len(explosions)):
-        explosion = explosions[i]
-        item_rect = pygame.Rect(0, 0, explosion[1] * 2, explosion[1] * 2)
-        item_rect.center = explosion[0]
-        if i == 0:
-            rect = item_rect
-        else:
-            rect = rect.union(item_rect)
-    bottom = scene_rect.bottom - 1
-    rect = rect.clip(scene_rect.x, scene_rect.y, scene_rect.w, bottom)
-    print('Explosions area = ' + str(rect))
-    return rect
+    if len(explosions) > 0:
+        rect = None
+        for i in range(len(explosions)):
+            explosion = explosions[i]
+            item_rect = pygame.Rect(0, 0, explosion[1] * 2, explosion[1] * 2)
+            item_rect.center = explosion[0]
+            if i == 0:
+                rect = item_rect
+            else:
+                rect = rect.union(item_rect)
+        bottom = scene_rect.bottom - 1
+        rect = rect.clip(scene_rect.x, scene_rect.y, scene_rect.w, bottom)
+        # print('Explosions area = ' + str(rect))
+        return rect
