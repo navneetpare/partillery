@@ -10,8 +10,14 @@ from partillery.game.terrain import Terrain
 
 
 def get_slope_rads(left_point, right_point):
-    m = - (right_point[1] - left_point[1]) / (right_point[0] - left_point[0])
-    return math.atan(m)
+    try:
+        m = - (right_point[1] - left_point[1]) / (right_point[0] - left_point[0])
+        return math.atan(m)
+    except ZeroDivisionError:
+        if right_point[1] < left_point[1]:
+            return math.pi / 2
+        else:
+            return 3 * math.pi / 2
 
 
 class BaseElement(DirtySprite):
@@ -26,6 +32,7 @@ class BaseElement(DirtySprite):
         self.w = self.rect.w
         self.dirty = 1
         self.current_rotation = 0
+        self.current_terrain_point_index = None
 
         # For projectile motion
         self.g = g
@@ -92,13 +99,13 @@ class BaseElement(DirtySprite):
     def bounce(self, self_vector, target_vector):
         pass
 
-    def roll_on_terrain(self, current_point_index, direction: int):
+    def roll_on_terrain(self, direction: int):
         tx = pygame.time.get_ticks()
-        i = current_point_index + direction
+        i = self.current_terrain_point_index + direction
         x0 = self.terrain.points[i][0]
         y0 = self.terrain.points[i][1]
 
-        print('terr_point: ' + str((x0, y0)))
+        # print('terr_point: ' + str((x0, y0)))
         # slope_angle = 0
         # point1 = self.terrain.points[i]
         # point2 = self.terrain.points[i + direction]
@@ -119,14 +126,19 @@ class BaseElement(DirtySprite):
         right_point = None
         slope_angle = None
 
+        left_index_limit = max(0, i - 2 * self.w)
+        right_index_limit = min(i + 2 * self.w, len(self.terrain.points)-1)
+        # print(left_index_limit)
+        # print(right_index_limit)
+
         for r in range(int(self.w/2)-1, self.w):
-            for j in range(i - 2 * self.w, i):
+            for j in range(left_index_limit, i):
                 x = self.terrain.points[j][0]
                 y = self.terrain.points[j][1]
                 if int(math.sqrt(math.pow(x - x0, 2) + math.pow(y - y0, 2))) == r:
                     left_point = x, y
                     break
-            for k in range(i, i + 2 * self.w):
+            for k in range(i, right_index_limit):
                 x = self.terrain.points[k][0]
                 y = self.terrain.points[k][1]
                 if int(math.sqrt(math.pow(x - x0, 2) + math.pow(y - y0, 2))) == r:
@@ -134,8 +146,8 @@ class BaseElement(DirtySprite):
                     break
             if right_point is not None and left_point is not None:
                 break
-        print('left_point :' + str(left_point))
-        print('right_point:' + str(right_point))
+        # print('left_point :' + str(left_point))
+        # print('right_point:' + str(right_point))
         if right_point is not None and left_point is not None:
             # concave or flat resting base
             if y0 > left_point[1] or y0 > right_point[1] or (y0 == left_point[1] == right_point [1]):
@@ -143,33 +155,37 @@ class BaseElement(DirtySprite):
                 slope_angle = get_slope_rads(left_point, right_point)
                 midpoint = (left_point[0] + right_point[0]) / 2, (left_point[1] + right_point[1])/ 2
                 x = int(self.h / 2 * math.cos(slope_angle + math.pi / 2) + midpoint[0])
-                y = int(-(self.h   / 2) * math.sin(slope_angle + math.pi / 2) + midpoint[1])
+                y = int(-(self.h / 2) * math.sin(slope_angle + math.pi / 2) + midpoint[1])
 
             else:  # convex resting base
                 # discard left and right points and use current point and last
                 if direction > 0:
                     right_point = self.terrain.points[i]
-                    left_point = self.terrain.points[current_point_index]
+                    left_point = self.terrain.points[self.current_terrain_point_index]
                 else:
-                    right_point = self.terrain.points[current_point_index]
+                    right_point = self.terrain.points[self.current_terrain_point_index]
                     left_point = self.terrain.points[i]
 
                 slope_angle = get_slope_rads(left_point, right_point)
                 x = int(self.h / 2 * math.cos(slope_angle + math.pi / 2) + x0)
                 y = int(-(self.h / 2) * math.sin(slope_angle + math.pi / 2) + y0)
 
-            print('center: ' + str((x,y)))
+            # print('center: ' + str((x, y)))
             # Try moving
             prev_rotation = self.current_rotation
             self.rotate(slope_angle)
             if self.move_anyway((x, y)):
+                self.current_terrain_point_index += direction
                 if self.terrain.mask.overlap(self.mask, self.rect.topleft):
                     # self.rotate(prev_rotation)
-                    print('overlapped')
-        print('timing: ' + str(pygame.time.get_ticks() - tx))
+                    # print('overlapped')
+                    pass
+            # print('timing: ' + str(pygame.time.get_ticks() - tx))
 
     def roll_to(self, x):
-        self.roll_on_terrain(self.terrain.get_point_index(x), 1)
+        i = self.terrain.get_point_index(x) - 1  # simluate rolling from a previous point to the current one
+        self.current_terrain_point_index = i
+        self.roll_on_terrain(1)
 
     def roll_on_terrain_old(self, pos_x):
         terrain_slope = self.get_slope_rads_old(pos_x)

@@ -3,9 +3,9 @@ import pygame
 
 class BaseExplosion:
     def __init__(self, game, pos: tuple, radius: int, lifespan: int):
-        print('explosion top: ' + str((pos[0], pos[1] + radius)))
-        print('explosion center: ' + str(pos))
-        print('explosion bottom: ' + str((pos[0], pos[1] - radius)))
+        # print('explosion top: ' + str((pos[0], pos[1] + radius)))
+        # print('explosion center: ' + str(pos))
+        # print('explosion bottom: ' + str((pos[0], pos[1] - radius)))
 
         self.exp_rect = None
         self.cut_out = None

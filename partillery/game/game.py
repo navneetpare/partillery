@@ -126,7 +126,7 @@ class Game:
             self.current_player.move_direction = -1
             self.current_player.moves_left -= 1
             self.mode = self.MODE_MOVE
-            self.pos_x = self.current_player.rect.centerx
+            # self.pos_x = self.current_player.rect.centerx
             self.move_start_time = pygame.time.get_ticks()
             self.cpl.update_moves_left(self.current_player.moves_left)
 
@@ -134,10 +134,8 @@ class Game:
         if self.current_player.moves_left > 0:
             self.current_player.move_direction = 1
             self.current_player.moves_left -= 1
-            self.mode = self.MODE_MOVE
-            self.pos_x = self.current_player.rect.centerx
-            self.move_start_time = pygame.time.get_ticks()
             self.cpl.update_moves_left(self.current_player.moves_left)
+            self.mode = self.MODE_MOVE
 
     def fire(self):
         self.fire_count += 1
@@ -169,8 +167,11 @@ class Game:
         tw = self.player_1.rect.w
         p1_x = random.randint(0 + tw, int(self.w / 2 - tw))  # random loc in left half of the game area
         p2_x = random.randint(int(self.w / 2) + tw, int(self.w - tw))  # random loc in right half of the game area
+        # print('Roll initial start ' + str(pygame.time.get_ticks()))
         self.player_1.update(roll_to=p1_x)
+        # print('Roll initial end ' + str(pygame.time.get_ticks()))
         self.player_2.update(roll_to=p2_x)
+        # print('Roll initial end 2 ' + str(pygame.time.get_ticks()))
         self.tank_elements = LayeredDirty(self.player_1.turret, self.player_1, self.player_1.crosshair,
                                           self.player_2.turret, self.player_2, self.player_2.crosshair)
         self.tanks = LayeredDirty(self.player_1, self.player_2)
@@ -186,7 +187,9 @@ class Game:
         screen.blit(self.cpl.image, self.cpl.rect)
         self.full_bg = screen.copy()  # Capture the screen to be used as bg for controls
         self.update_scoreboard()
+        # print('Tanks redraw start ' + str(pygame.time.get_ticks()))
         self.redraw(tanks=True, controls=True)
+        # print('Tanks redraw end ' + str(pygame.time.get_ticks()))
 
         # Game modes
         def fire_control_mode():
@@ -245,25 +248,26 @@ class Game:
             weaponFragment1 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
                                              self.current_player.angle, t0=t0, v=v, g=g, explosion_radius=60)
 
-            # weaponFragment2 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
-            #                                  self.current_player.angle + 1, t0, v=v, g=g, explosion_radius=60)
-            #
-            # weaponFragment3 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
-            #                                  self.current_player.angle + 2, t0, v=v, g=g, explosion_radius=60)
-            #
-            # weaponFragment4 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
-            #                                  self.current_player.angle - 1, t0, v=v, g=g, explosion_radius=60)
-            #
-            # weaponFragment5 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
-            #                                  self.current_player.angle - 2, t0, v=v, g=g, explosion_radius=60)
+            weaponFragment2 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
+                                             self.current_player.angle + 1, t0, v=v, g=g, explosion_radius=60)
+
+            weaponFragment3 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
+                                             self.current_player.angle + 2, t0, v=v, g=g, explosion_radius=60)
+
+            weaponFragment4 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
+                                             self.current_player.angle - 1, t0, v=v, g=g, explosion_radius=60)
+
+            weaponFragment5 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
+                                             self.current_player.angle - 2, t0, v=v, g=g, explosion_radius=60)
 
             self.weapon.add(weaponFragment1)
-            # self.weapon.add(weaponFragment2)
-            # self.weapon.add(weaponFragment3)
-            # self.weapon.add(weaponFragment4)
-            # self.weapon.add(weaponFragment5)
+            self.weapon.add(weaponFragment2)
+            self.weapon.add(weaponFragment3)
+            self.weapon.add(weaponFragment4)
+            self.weapon.add(weaponFragment5)
             explosions_area = self.weapon.fire()
-            self.terrain.recompute(explosions_area)
+            # self.terrain.recompute(explosions_area)
+            self.terrain.compute_terrain_points()
             # terrain_fall_thread = Thread(target=self.terrain.fall, args=[explosions_area])
             # tank_fall_thread = Thread(target=self.current_player.fall)
             # # self.terrain.fall(explosions_area)
@@ -273,8 +277,9 @@ class Game:
             # terrain_fall_thread.join()
             # tank_fall_thread.join()
             self.terrain.fall(explosions_area)
-            if self.fire_count == 110:
-                self.terrain.mask.to_surface(screen, setcolor=(0,255,0,80), unsetcolor=None)
+            self.terrain.compute_terrain_points()
+            # if self.fire_count == 110:
+            #     self.terrain.mask.to_surface(screen, setcolor=(0,255,0,80), unsetcolor=None)
             self.tanks.update(fall=True)
             self.screen.set_clip(self.rect)
             self.update_scoreboard()
@@ -288,6 +293,14 @@ class Game:
             # self.switch_player()
 
         def move_mode():
+            self.move_start_time = pygame.time.get_ticks()
+            while (pygame.time.get_ticks() - self.move_start_time) < config.game.move_duration_ms:
+                self.current_player.update(roll_on_terrain=True)
+                self.redraw(tanks=True)
+                time.sleep(0.015)
+            self.mode = self.MODE_FIRE_CONTROL
+
+        def move_mode_old():
             if (pygame.time.get_ticks() - self.move_start_time) < config.game.move_duration_ms:
                 self.pos_x += self.current_player.move_direction
                 if self.pos_x >= (self.w - tw / 2) or self.pos_x <= tw / 2:

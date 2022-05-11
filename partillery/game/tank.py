@@ -54,17 +54,22 @@ class Tank(BaseElement):
     def update(self, **kwargs):
         super().update()
 
-        if "roll_to" in kwargs:
+        if "roll_on_terrain" in kwargs:
+            self.roll_on_terrain(direction=self.move_direction)
+            self.turret.update()
+            self.crosshair.update()
+
+        elif "roll_to" in kwargs:
             self.roll_to(kwargs["roll_to"])
             self.turret.update()
             self.crosshair.update()
 
-        if "angle" in kwargs:
+        elif "angle" in kwargs:
             self.angle = kwargs["angle"]
             self.turret.update()
             self.crosshair.update()
 
-        if "fall" in kwargs:
+        elif "fall" in kwargs:
             self.fall()
 
     def fall(self):

@@ -18,11 +18,12 @@ from scipy import interpolate
 
 # Colours
 
-g1 = 0, 180, 0, 255  # green opaque
-g2 = 0, 150, 0, 255  # green opaque
-g3 = 0, 120, 0, 255  # green opaque
-g4 = 0, 90, 0, 255  # green opaque
-g5 = 0, 60, 0, 255  # green opaque
+snow = 150, 150, 150
+g1 = 0, 180, 0  # green opaque
+g2 = 0, 150, 0  # green opaque
+g3 = 0, 120, 0  # green opaque
+g4 = 0, 90, 0  # green opaque
+g5 = 0, 60, 0  # green opaque
 
 # --- awesome palette
 teal = 56, 104, 80
@@ -178,7 +179,7 @@ def generate(w, h, terrain_type):
         y_arr = y_arr.astype(int, 'K', 'unsafe', True, True)
 
     elif terrain_type == 'Flat':
-        y_arr = np.ones(w) * 480
+        y_arr = np.ones(w) * 550
 
     return y_arr  # only need the y coords; x is implicit as array index - 1
 
@@ -253,12 +254,15 @@ def get_optimal_display_update_areas(columns: OrderedDict):
 class Terrain:
     def __init__(self, game, game_w, game_h, terrain_type):
         # Create a layer for terrain, with per-pixel alpha allowed
+        # print('Terr gen start ' + str(pygame.time.get_ticks()))
         self.is_falling = False
         self.game = game
         self.w = game_w
         self.game_h = game_h
         self.image = pygame.Surface((game_w, game_h), pygame.SRCALPHA)
+        # print('Generate method start ' + str(pygame.time.get_ticks()))
         self.y_coordinates = generate(game_w, game_h, terrain_type)  # only y coords
+        # print('Generate method end ' + str(pygame.time.get_ticks()))
         x = np.arange(1, game_w + 1, 1)  # just temp
         # self.points = np.array((x, self.y_coordinates)).T
         self.points = None
@@ -268,27 +272,27 @@ class Terrain:
 
         green_val = 255
         # Top crust
-        for i in range(1, 3):
+        for i in range(1, 20):
             m = np.column_stack((x, y))
             # pygame.draw.lines(self.surf, b1, False, m)
-            pygame.draw.lines(self.image, (150, 150, 150), False, m)
+            pygame.draw.lines(self.image, snow, False, m)
             y += 1
             y.clip(0, game_h)
-        '''for i in range(21, 40):
+        for i in range(20, 60):
             m = np.column_stack((x, y))
-            pygame.draw.lines(self.surf, b2, False, m)
+            pygame.draw.lines(self.image, teal, False, m)
             y += 1
-            y.clip(0, play_h)
-        for i in range(41, 60):
+            y.clip(0, game_h)
+        for i in range(60, 100):
             m = np.column_stack((x, y))
-            pygame.draw.lines(self.surf, b3, False, m)
+            pygame.draw.lines(self.image, teal, False, m)
             y += 1
-            y.clip(0, play_h)'''
+            y.clip(0, game_h)
         # Body gradient
-        for i in range(4, game_h):
+        for i in range(100, game_h):
             m = np.column_stack((x, y))
             # pygame.draw.lines(self.surf, b4, False, m)
-            pygame.draw.lines(self.image, (150, 150, 150, 255), False, m)
+            pygame.draw.lines(self.image, teal, False, m)
             # pygame.draw.lines(self.surf, b4, False, m)
             green_val -= 0.3
             y += 1
@@ -296,65 +300,102 @@ class Terrain:
 
         # get mask after drawing complete
         self.mask = pygame.mask.from_surface(self.image, 254)
-        self.compute_initial_points()
+        # print('Compute initial start ' + str(pygame.time.get_ticks()))
+        self.compute_terrain_points()
+        # print('Compute initial end ' + str(pygame.time.get_ticks()))
 
-    def recompute(self, area: pygame.Rect):
-        if area is not None:
-            for x in range(area.left, area.right + 1):
-                found_terrain = False
-                for y in range(area.top -2, area.bottom + 1):
-                    try:
-                        if self.mask.get_at((x, y)) == 1:
-                            self.y_coordinates[x] = y
-                            # print('recompute: ' + str((x, y)))
-                            found_terrain = True
-                            break
-                    except IndexError:
-                        pass
-                if not found_terrain:
-                    self.y_coordinates[x] = self.game_h
+    def compute_terrain_points(self):
+        # find first pixel in each continuous terrain area
+        floor_y = self.game_h - 1
+        tracking = self.mask.get_at((1, floor_y))
+        start_points = [((1, floor_y), tracking)]
+        for i in range(2, self.w):
+            mask = self.mask.get_at((i, floor_y))
+            if mask == tracking:
+                pass
+            else:
+                tracking = mask
+                start_points.append(((i, floor_y), tracking))
 
-    def recompute2(self):
-        bottom = self.game_h - 1
-        right = self.w - 1
-        left = 1
-        start_deleting = False
-        start_x = None
-        points = self.mask.outline()
+        print('--- start points ---')
+        print(start_points)
 
-    def compute_initial_points(self):
-        outline = self.mask.outline()
-        index_of_right = None
-        index_of_left = None
-        for i in range(len(outline)):
-            if outline[i][0] == self.w-1 and index_of_right is None:
-                index_of_right = i
-                print('right : ' + str(index_of_right))
-                if index_of_left is None:
-                    for j in range(i, -len(outline), -1):
-                        if outline[j][0] == 2 and index_of_left is None:
-                            index_of_left = j-1
-                            print('left : ' + str(index_of_left))
-                            break
-                break
-            elif outline[i][0] == 1 and index_of_left is None:
-                index_of_left = i
-                print('left : ' + str(index_of_left))
-                for j in range(i, len(outline)):
-                    if outline[j][0] == self.w-1 and index_of_right is None:
-                        index_of_right = j
-                        print('right : ' + str(index_of_right))
-                        break
-                break
+        # last_mask = self.mask.get_at(self.w-1, bottom)
+        # if last_mask != tracking:
+        #     start_points.append(self.w-1, bottom)
+        masks = []
+        outlines = []
+        trimmed_outlines = []
+        final_terrain_points = []
+        for start_point in start_points:
+            if start_point[1] == 1:  # i.e. terrain is filled from this point
+                masks.append(self.mask.connected_component(start_point[0]))
+        print('--- masks ---')
+        print(masks)
+        for mask in masks:
+            outlines.append(mask.outline())
+        print('--- raw outlines ---')
+        print(outlines)
+        for outline in outlines:
+            trimmed_outlines.append(self.trim_outline(outline))
+        print('--- trimmed outlines ---')
+        print(trimmed_outlines)
+        for i in range(len(trimmed_outlines)):
+            if len(final_terrain_points) == 0:
+                if trimmed_outlines[i][0][0] > 1:
+                    final_terrain_points.extend(self.filler(-1, trimmed_outlines[i][0][0]))
+                final_terrain_points.extend(trimmed_outlines[i])
+            else:
+                # fill the gap between last outline and this outline as terrain floor
+                last_x_of_prev_list = final_terrain_points[-1][0]
+                first_x_of_current_list = trimmed_outlines[i][0][0]
+                final_terrain_points.extend(self.filler(last_x_of_prev_list, first_x_of_current_list))
+                final_terrain_points.extend(trimmed_outlines[i])
 
-        if index_of_left < 0:
-            self.points = outline[index_of_left:]
-            new = outline[1:index_of_right+1]
-            self.points.extend(new)
-        else:
-            self.points = outline[index_of_left:index_of_right+1]
+        if final_terrain_points[-1][0] < self.w - 1:
+            final_terrain_points.extend(self.filler(final_terrain_points[-1][0], self.w))
 
-        print('points: ' + str(self.points))
+        self.points = final_terrain_points
+        print('--- final points ---')
+        print(self.points)
+
+    def filler(self, left_x, right_x):
+        # generates filler 'between' two points, exlusive of both
+        floor_y = self.game_h - 1
+        x_array = np.arange(left_x + 1, right_x, dtype=int)
+        y_array = np.ones(right_x - left_x - 1) * floor_y
+        arr = np.column_stack((x_array, y_array)).tolist()
+        return arr
+
+    def trim_outline(self, outline: list) -> list:
+        # https://stackoverflow.com/questions/25823608/find-matching-rows-in-2-dimensional-numpy-array
+        floor_y = self.game_h - 1
+        outline_arr = np.array(outline, dtype=int)
+        print(outline_arr)
+        outline_floor = outline_arr[(outline_arr[:, 1] == floor_y)]
+        outline_floor_index_of_left = np.argmin(outline_floor, axis=0)[0]
+        outline_floor_index_of_right = np.argmax(outline_floor, axis=0)[0]
+        outline_floor_left_x = outline_floor[outline_floor_index_of_left][0]
+        outline_floor_right_x = outline_floor[outline_floor_index_of_right][0]
+        outline_index_of_left = np.where((outline_arr[:, 0] == outline_floor_left_x) & (outline_arr[:, 1] == floor_y))[0]
+        outline_index_of_right = np.where((outline_arr[:, 0] == outline_floor_right_x) & (outline_arr[:, 1] == floor_y))[0]
+        outline_arr_slice_1 = outline_arr[int(outline_index_of_left):, :]
+        outline_arr_slice_2 = outline_arr[:int(outline_index_of_right) + 1, :]
+        points_arr = np.vstack((outline_arr_slice_1, outline_arr_slice_2))
+
+        # handle screen left and right edges
+        if tuple(points_arr[0]) == (1, floor_y):
+            top_index_of_left_screen_edge = np.where(points_arr[:, 0] == 1)[0][-1]
+            points_arr = points_arr[top_index_of_left_screen_edge:]
+            # print(points_arr)
+
+        if tuple(points_arr[-1]) == (self.w - 1, floor_y):
+            top_index_of_right_screen_edge = np.where(points_arr[:, 0] == self.w - 1)[0][0]
+            points_arr = points_arr[: top_index_of_right_screen_edge + 1]
+            # print(points_arr)
+
+        points = points_arr.tolist()
+        return points
 
     def get_point(self, x):
         for point in self.points:
