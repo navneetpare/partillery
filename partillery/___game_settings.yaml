@@ -1,6 +1,6 @@
 ---
 display:
-  fullscreen: false
+  fullscreen: true
   resolution: 720p  # 480p, 720p or 1080p
   pos_x: 1900
   pos_y: 50
@@ -13,7 +13,7 @@ game:
   tank_height: 16
   move_duration_ms: 3500
 game_control_panel:
-  img_scale_factor: 4.4
+  img_scale_factor: 3.9
   background_img: control_panel.png
   font_name: expressway.ttf
   font_size_viewer: 16

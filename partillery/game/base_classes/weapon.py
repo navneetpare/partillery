@@ -72,16 +72,10 @@ class Weapon(LayeredDirty):
 
             self.game.redraw(weapon=True, tanks=True)
 
-            # if len(explosion_threads) > 0:
-            #     for thread in explosion_threads:
-            #         this_thread_alive = thread.is_alive()
-            #         explosions_alive = explosions_alive or this_thread_alive
-            #         if not this_thread_alive:
-            #             explosion_threads.remove(thread)
-
         for thread in explosion_threads:
             thread.join()
 
+        self.game.terrain.compute_terrain_points()
         explosions_area = get_explosions_bounding_area(explosions, self.game.scene_rect)
         return explosions_area
 

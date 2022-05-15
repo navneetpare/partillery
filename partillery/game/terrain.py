@@ -317,12 +317,9 @@ class Terrain:
                 tracking = mask
                 start_points.append(((i, floor_y), tracking))
 
-        print('--- start points ---')
-        print(start_points)
+        # print('--- start points ---')
+        # print(start_points)
 
-        # last_mask = self.mask.get_at(self.w-1, bottom)
-        # if last_mask != tracking:
-        #     start_points.append(self.w-1, bottom)
         masks = []
         outlines = []
         trimmed_outlines = []
@@ -330,16 +327,16 @@ class Terrain:
         for start_point in start_points:
             if start_point[1] == 1:  # i.e. terrain is filled from this point
                 masks.append(self.mask.connected_component(start_point[0]))
-        print('--- masks ---')
-        print(masks)
+        # print('--- masks ---')
+        # print(masks)
         for mask in masks:
             outlines.append(mask.outline())
-        print('--- raw outlines ---')
-        print(outlines)
+        # print('--- raw outlines ---')
+        # print(outlines)
         for outline in outlines:
             trimmed_outlines.append(self.trim_outline(outline))
-        print('--- trimmed outlines ---')
-        print(trimmed_outlines)
+        # print('--- trimmed outlines ---')
+        # print(trimmed_outlines)
         for i in range(len(trimmed_outlines)):
             if len(final_terrain_points) == 0:
                 if trimmed_outlines[i][0][0] > 1:
@@ -356,8 +353,8 @@ class Terrain:
             final_terrain_points.extend(self.filler(final_terrain_points[-1][0], self.w))
 
         self.points = final_terrain_points
-        print('--- final points ---')
-        print(self.points)
+        # print('--- final points ---')
+        # print(self.points)
 
     def filler(self, left_x, right_x):
         # generates filler 'between' two points, exlusive of both
@@ -371,7 +368,7 @@ class Terrain:
         # https://stackoverflow.com/questions/25823608/find-matching-rows-in-2-dimensional-numpy-array
         floor_y = self.game_h - 1
         outline_arr = np.array(outline, dtype=int)
-        print(outline_arr)
+        # print(outline_arr)
         outline_floor = outline_arr[(outline_arr[:, 1] == floor_y)]
         outline_floor_index_of_left = np.argmin(outline_floor, axis=0)[0]
         outline_floor_index_of_right = np.argmax(outline_floor, axis=0)[0]
@@ -410,12 +407,12 @@ class Terrain:
     def fall(self, area: pygame.Rect):
         if area is not None:
             self.is_falling = True
-            print('game_h:' + str(self.game_h))
             columns = self.get_columns_with_holes(area)
             update_area = get_display_update_area(area)
 
             deleted_columns = []
             while len(columns) > 0:
+                self.game.undraw(tanks=True)
                 for x in deleted_columns:
                     del columns[x]  # Remove columns queued for removal
                 deleted_columns.clear()  # empty the list to prevent re-deletion error
@@ -433,9 +430,11 @@ class Terrain:
                         columns[x] = (bottom, top + 1)
                         self.y_coordinates[x] += 1
 
+                self.game.draw(tanks=True)
                 pygame.display.update(update_area)
 
             self.is_falling = False
+        self.compute_terrain_points()
 
     def get_columns_with_holes(self, area: pygame.Rect):
         columns = OrderedDict()

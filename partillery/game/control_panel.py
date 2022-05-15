@@ -57,7 +57,7 @@ class ControlPanel(LayeredDirty):
         # These will be then dynamically created as 'Control' objects in a loop by reading
         # their names as strings from the config object using getattr
         # Saves us writing a lot of object creation boilerplate code.
-        img_scaling_factor = config.game_control_panel.img_scale_factor
+        img_scaling_factor = config.game_control_panel.img_scale_factor * 1280 / self.rect.w
         control_group_names = utils.get_layout_control_group_names()
         layout = config.game_control_panel.layout
 
@@ -147,7 +147,7 @@ class ControlPanel(LayeredDirty):
         getattr(self, 'power_bar').update_value(val)
 
     def update_angle(self, val):
-        getattr(self, 'viewer_angle').update_value(val)
+        getattr(self, 'viewer_angle').update_value(" " + str(val) + u'\N{DEGREE SIGN}')
 
     def update_weapon(self, name):
         getattr(self, 'weapons_list').update_value(name)
@@ -267,7 +267,7 @@ class Viewer(DirtySprite):
 
     def update(self, text):
         self.image.fill((0, 0, 0))
-        text_surf = self.font.render(str(text), True, (255, 210, 0), (0, 0, 0))
+        text_surf = self.font.render(str(text), True, (255, 190, 0), (0, 0, 0))
         text_surf_rect = text_surf.get_rect()
         # We take relative center of the viewer instead of absolute position
         # Because we will blit to viewer surf instead of screen.

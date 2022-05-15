@@ -18,7 +18,7 @@ class Tank(BaseElement):
         self.game = game
         self.w = self.rect.w
         self.h = self.rect.h
-        self.moves_left = 4
+        self.moves_left = 10
         self.move_direction = 1  # -1 == left, +1 = right
         # self.game_rect = game_rect
         # self.top_clamp = game_rect.top
@@ -32,44 +32,31 @@ class Tank(BaseElement):
         self.selected_weapon = "Plain bomb"
         self.resting = False
 
-    '''def get_center_above_terrain(self, x, angle_rads):
-        y = self.terr_y_coordinates[x]
-        x1 = int(self.h / 2 * math.cos(angle_rads + math.pi / 2) + x)
-        y1 = int(-(self.h  / 2) * math.sin(angle_rads + math.pi / 2) + y)
-        return x1, y1
-
-    def get_slope_rads(self, x):
-        # slope = (y2 - y1) / (x2 - x1)
-        m = - (self.terr_y_coordinates[x + 4] - self.terr_y_coordinates[x - 4]) / 8
-        # we take slope across (x + 4) px and (x - 4px) to smooth out jerky rotation
-        # of the tank when going over curves and to get a more average slope across the width of the tank
-        return math.atan(m)
-
-    def roll_on_terrain(self, pos_x):
-        terrain_slope = self.get_slope_rads(pos_x)
-        pos = self.get_center_above_terrain(pos_x, terrain_slope)
-        self.move(pos)
-        self.rotate(terrain_slope)'''
-
     def update(self, **kwargs):
         super().update()
+
+        if "terrain_changed" in kwargs:
+            try:
+                self.current_terrain_point_index = self.terrain.points.index(self.current_terrain_point)
+            except ValueError:
+                self.fall()
 
         if "roll_on_terrain" in kwargs:
             self.roll_on_terrain(direction=self.move_direction)
             self.turret.update()
             self.crosshair.update()
 
-        elif "roll_to" in kwargs:
+        if "roll_to" in kwargs:
             self.roll_to(kwargs["roll_to"])
             self.turret.update()
             self.crosshair.update()
 
-        elif "angle" in kwargs:
+        if "angle" in kwargs:
             self.angle = kwargs["angle"]
             self.turret.update()
             self.crosshair.update()
 
-        elif "fall" in kwargs:
+        if "fall" in kwargs:
             self.fall()
 
     def fall(self):
@@ -94,7 +81,8 @@ class Tank(BaseElement):
             self.update(roll_to=self.rect.centerx)
 
     def on_terrain(self):
-        return self.game.terrain.mask.overlap(self.mask, self.rect.topleft) or self.rect.bottom >= self.game.h - 1
+        return self.game.terrain.mask.overlap(self.mask, self.rect.topleft) or self.rect.bottom >= self.game.h
+        # return self.current_terrain_point in self.terrain.points
 
 
 class Turret(DirtySprite):

@@ -2,11 +2,12 @@ import random
 import sys
 import time
 import typing
-from threading import Thread
+
 import pygame
-from pygame.sprite import LayeredDirty, Group
+from pygame.sprite import LayeredDirty
+
 from partillery import utils
-from partillery.game.base_classes.weapon import Weapon, WeaponFragment, get_explosions_bounding_area
+from partillery.game.base_classes.weapon import Weapon, WeaponFragment
 from partillery.game.control_panel import ControlPanel, Mouse, Control
 from partillery.game.tank import Tank
 from partillery.game.terrain import Terrain
@@ -56,7 +57,7 @@ class Game:
         self.weapon = None  # The actual weapon object
         self.weapon_choice = None  # The weapon selected from the object
 
-    def handle_exit_key(self, event: pygame.event):
+    def handle_escape_key(self, event: pygame.event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             pygame.mixer.quit()
             pygame.display.set_mode(self.restore_resolution, pygame.RESIZABLE)
@@ -65,8 +66,6 @@ class Game:
             sys.exit()
 
     def redraw(self, weapon=False, tanks=False, controls=False):
-        # print('weapon: ' + str(weapon) + ' tanks: ' + str(tanks) + ' controls: ' + str(controls))
-        t0 = pygame.time.get_ticks()
         if weapon is True:
             self.weapon.clear(self.screen, self.scene)
             rects = self.weapon.draw(self.screen)
@@ -79,10 +78,28 @@ class Game:
             self.cpl.clear(self.screen, self.full_bg)
             rects = self.cpl.draw(self.screen)
             pygame.display.update(rects)
-        # print('draw time:' + str(pygame.time.get_ticks() - t0))
+
+    def undraw(self, weapon=False, tanks=False, controls=False):
+        if weapon is True:
+            self.weapon.clear(self.screen, self.scene)
+        if tanks is True:
+            self.tank_elements.clear(self.screen, self.scene)
+        if controls is True:
+            self.cpl.clear(self.screen, self.full_bg)
+
+    def draw(self, weapon=False, tanks=False, controls=False):
+        if weapon is True:
+            rects = self.weapon.draw(self.screen)
+            pygame.display.update(rects)
+        if tanks is True:
+            rects = self.tank_elements.draw(self.screen)
+            pygame.display.update(rects)
+        if controls is True:
+            rects = self.cpl.draw(self.screen)
+            pygame.display.update(rects)
 
     def update_scoreboard(self):
-        self.cpl.scoreboard.overlay.update(str(self.player_1.name) + " : " + str(self.player_1.score) + "     " +
+        self.cpl.scoreboard.overlay.update(str(self.player_1.name) + " : " + str(self.player_1.score) + "    " +
                                            str(self.player_2.name) + " : " + str(self.player_2.score))
         # print("scoreboard: " + str(self.player_1.score) + " / " + str(self.player_2.score))
         pygame.display.update()
@@ -149,17 +166,17 @@ class Game:
 
     # Game Method
     def run(self):
-        # ------ Alias key params so I don't have to type 'self' everywhere.
-        screen = self.screen
-        clock = self.clock
-        config = self.config
-        g = config.physics.gravity
+        # ------ Alias key params, so I don't have to type 'self' everywhere.
+        # screen = self.screen
+        # clock = self.clock
+        # config = self.config
+        g = self.config.physics.gravity
 
         # ------ Create the terrain
         self.terrain = Terrain(self, self.w, self.h, 'Random')
 
         # ------ Create the control panel and controls
-        self.cpl = ControlPanel(0, self.h, self.w, self.resolution[1] - self.h, config)
+        self.cpl = ControlPanel(0, self.h, self.w, self.resolution[1] - self.h, self.config)
 
         # ------ Create tank objects, move them and draw onto screen
         self.player_1 = Tank(self, 'Nav', 'red', 45, self.terrain, g)
@@ -183,9 +200,9 @@ class Game:
 
         # ------ Draw stuff on to the screen
         self.scene.blit(self.terrain.image, (0, 0))  # The scene already has the sky before this from init.
-        screen.blit(self.scene, (0, 0))
-        screen.blit(self.cpl.image, self.cpl.rect)
-        self.full_bg = screen.copy()  # Capture the screen to be used as bg for controls
+        self.screen.blit(self.scene, (0, 0))
+        self.screen.blit(self.cpl.image, self.cpl.rect)
+        self.full_bg = self.screen.copy()  # Capture the screen to be used as bg for controls
         self.update_scoreboard()
         # print('Tanks redraw start ' + str(pygame.time.get_ticks()))
         self.redraw(tanks=True, controls=True)
@@ -244,7 +261,7 @@ class Game:
             t0 = pygame.time.get_ticks()
             start_pos = self.current_player.turret.get_absolute_nose()
             v = self.current_player.power * 1000 / 100
-            g = config.physics.gravity
+            # g = config.physics.gravity
             weaponFragment1 = WeaponFragment('ammo_4.gif', self.weapon, self.terrain, start_pos,
                                              self.current_player.angle, t0=t0, v=v, g=g, explosion_radius=60)
 
@@ -266,21 +283,8 @@ class Game:
             self.weapon.add(weaponFragment4)
             self.weapon.add(weaponFragment5)
             explosions_area = self.weapon.fire()
-            # self.terrain.recompute(explosions_area)
-            self.terrain.compute_terrain_points()
-            # terrain_fall_thread = Thread(target=self.terrain.fall, args=[explosions_area])
-            # tank_fall_thread = Thread(target=self.current_player.fall)
-            # # self.terrain.fall(explosions_area)
-            #
-            # terrain_fall_thread.start()
-            # tank_fall_thread.start()
-            # terrain_fall_thread.join()
-            # tank_fall_thread.join()
             self.terrain.fall(explosions_area)
-            self.terrain.compute_terrain_points()
-            # if self.fire_count == 110:
-            #     self.terrain.mask.to_surface(screen, setcolor=(0,255,0,80), unsetcolor=None)
-            self.tanks.update(fall=True)
+            self.tanks.update(terrain_changed=True)
             self.screen.set_clip(self.rect)
             self.update_scoreboard()
             self.redraw(tanks=True, controls=True)
@@ -294,24 +298,11 @@ class Game:
 
         def move_mode():
             self.move_start_time = pygame.time.get_ticks()
-            while (pygame.time.get_ticks() - self.move_start_time) < config.game.move_duration_ms:
+            while (pygame.time.get_ticks() - self.move_start_time) < self.config.game.move_duration_ms:
                 self.current_player.update(roll_on_terrain=True)
                 self.redraw(tanks=True)
                 time.sleep(0.015)
             self.mode = self.MODE_FIRE_CONTROL
-
-        def move_mode_old():
-            if (pygame.time.get_ticks() - self.move_start_time) < config.game.move_duration_ms:
-                self.pos_x += self.current_player.move_direction
-                if self.pos_x >= (self.w - tw / 2) or self.pos_x <= tw / 2:
-                    self.mode = self.MODE_FIRE_CONTROL
-                else:
-                    self.tank_elements.clear(self.screen, self.scene)
-                    self.current_player.update(roll_to=self.pos_x)
-                    dirty_rects = self.tank_elements.draw(self.screen)
-                    pygame.display.update(dirty_rects)
-            else:
-                self.mode = self.MODE_FIRE_CONTROL
 
         # Game loop
         while 1:
@@ -319,7 +310,7 @@ class Game:
             for retrieved_event in pygame.event.get([pygame.MOUSEBUTTONUP, pygame.MOUSEBUTTONDOWN,
                                                      pygame.MOUSEMOTION, pygame.MOUSEWHEEL, pygame.KEYDOWN]):
                 event = retrieved_event
-                self.handle_exit_key(event)
+                self.handle_escape_key(event)
 
             if self.mode == self.MODE_FIRE_CONTROL and event is not None:
                 fire_control_mode()
@@ -330,4 +321,4 @@ class Game:
             elif self.mode == self.MODE_MOVE:
                 move_mode()
 
-            clock.tick(config.display.frame_rate)
+            self.clock.tick(self.config.display.frame_rate)

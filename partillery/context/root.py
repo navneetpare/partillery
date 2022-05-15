@@ -12,7 +12,6 @@ class Root:
                    '720p': (1280, 720),
                    '1080p': (1920, 1080)}
 
-
     @staticmethod
     def handle_exit_key(event: pygame.event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:

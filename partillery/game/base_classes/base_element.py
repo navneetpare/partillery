@@ -33,6 +33,7 @@ class BaseElement(DirtySprite):
         self.dirty = 1
         self.current_rotation = 0
         self.current_terrain_point_index = None
+        self.current_terrain_point = None
 
         # For projectile motion
         self.g = g
@@ -66,7 +67,7 @@ class BaseElement(DirtySprite):
         success = True
         prev_pos = self.rect.center
         self.rect.center = pos
-        if self.rect.left < 0 or self.rect.right > self.terrain.w or self.rect.bottom >= self.terrain.game_h - 1:
+        if self.rect.left < 0 or self.rect.right > self.terrain.w or self.rect.bottom >= self.terrain.game_h:
             self.rect.center = prev_pos
             success = False
         return success
@@ -100,31 +101,13 @@ class BaseElement(DirtySprite):
         pass
 
     def roll_on_terrain(self, direction: int):
-        tx = pygame.time.get_ticks()
+        # tx = pygame.time.get_ticks()
         i = self.current_terrain_point_index + direction
         x0 = self.terrain.points[i][0]
         y0 = self.terrain.points[i][1]
 
-        # print('terr_point: ' + str((x0, y0)))
-        # slope_angle = 0
-        # point1 = self.terrain.points[i]
-        # point2 = self.terrain.points[i + direction]
-        # if direction > 0:
-        #     slope_angle = self.get_slope_rads(point1, point2)
-        #     rightx = point2[0] + (self.w / 2) * math.cos(slope_angle)
-        #     righty = point2[0] - (self.w / 2) * math.sin(slope_angle)
-        #     leftx = point2[0] - (self.w / 2) * math.cos(slope_angle)
-        #     lefty = point2[0] + (self.w / 2) * math.sin(slope_angle)
-        # else:
-        #     slope_angle = self.get_slope_rads(point2, point1)
-        #
-        # normal = slope_angle + math.pi / 2
-        #
-        # # base line
-        # basepoint1 =
         left_point = None
         right_point = None
-        slope_angle = None
 
         left_index_limit = max(0, i - 2 * self.w)
         right_index_limit = min(i + 2 * self.w, len(self.terrain.points)-1)
@@ -150,10 +133,10 @@ class BaseElement(DirtySprite):
         # print('right_point:' + str(right_point))
         if right_point is not None and left_point is not None:
             # concave or flat resting base
-            if y0 > left_point[1] or y0 > right_point[1] or (y0 == left_point[1] == right_point [1]):
+            if y0 > left_point[1] or y0 > right_point[1] or (y0 == left_point[1] == right_point[1]):
                 # slope will be based on left and right points
                 slope_angle = get_slope_rads(left_point, right_point)
-                midpoint = (left_point[0] + right_point[0]) / 2, (left_point[1] + right_point[1])/ 2
+                midpoint = (left_point[0] + right_point[0]) / 2, (left_point[1] + right_point[1]) / 2
                 x = int(self.h / 2 * math.cos(slope_angle + math.pi / 2) + midpoint[0])
                 y = int(-(self.h / 2) * math.sin(slope_angle + math.pi / 2) + midpoint[1])
 
@@ -170,12 +153,12 @@ class BaseElement(DirtySprite):
                 x = int(self.h / 2 * math.cos(slope_angle + math.pi / 2) + x0)
                 y = int(-(self.h / 2) * math.sin(slope_angle + math.pi / 2) + y0)
 
-            # print('center: ' + str((x, y)))
             # Try moving
             prev_rotation = self.current_rotation
             self.rotate(slope_angle)
             if self.move_anyway((x, y)):
-                self.current_terrain_point_index += direction
+                self.current_terrain_point_index = i
+                self.current_terrain_point = self.terrain.points[i]
                 if self.terrain.mask.overlap(self.mask, self.rect.topleft):
                     # self.rotate(prev_rotation)
                     # print('overlapped')
@@ -185,6 +168,7 @@ class BaseElement(DirtySprite):
     def roll_to(self, x):
         i = self.terrain.get_point_index(x) - 1  # simluate rolling from a previous point to the current one
         self.current_terrain_point_index = i
+        self.current_terrain_point = self.terrain.points[i]
         self.roll_on_terrain(1)
 
     def roll_on_terrain_old(self, pos_x):

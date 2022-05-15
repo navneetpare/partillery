@@ -87,10 +87,6 @@ def slope(terr, rect):
     pass
 
 
-# def get_eraser(x, y, w, h):
-#    area = screen.subsurface(pygame.Rect(x - game_l, y - game_t, w, h)).copy()
-#    return area
-
 def eraser(source_surf: pygame.Surface, rect: pygame.Rect):
     return source_surf.subsurface(rect).copy()
 
@@ -109,38 +105,3 @@ def clamp(n, lower_bound, upper_bound):
 def bell(message: str):
     print(message)
     pass
-
-
-'''
-
-
-
-def get_eraser(x, y, w, h):
-    area = screen.subsurface(pygame.Rect(x - play_left, y - play_top, w, h)).copy()
-    return area
-
-
-def scale(surface, scaling_factor):
-    rect = surface.get_rect()
-    new_w = round(rect.w / scaling_factor)
-    new_h = round(rect.h / scaling_factor)
-    return pygame.transform.scale(surface, (new_w, new_h))
-
-
-def clamp(n, min_n, max_n):
-    return max(min(max_n, n), min_n)
-
-
-def get_slope_radians(x):
-    # slope = (y2 - y1) / (x2 - x1)
-    m = - (terr.ypoints[x + 1] - terr.ypoints[x])  # ignore div by x2 - x1 which is always 1
-    return math.atan(m)
-
-
-def get_tank_center(x, angle):
-    y = terr.ypoints[x - 1]
-    x1 = int(tank_h / 2 * math.cos(angle + math.pi / 2) + x)
-    y1 = int(-(tank_h / 2) * math.sin(angle + math.pi / 2) + y)
-    return x1, y1
-
-'''
