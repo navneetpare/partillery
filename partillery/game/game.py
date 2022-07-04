@@ -1,5 +1,6 @@
 import random
 import sys
+import threading
 import time
 import typing
 
@@ -179,8 +180,8 @@ class Game:
         self.cpl = ControlPanel(0, self.h, self.w, self.resolution[1] - self.h, self.config)
 
         # ------ Create tank objects, move them and draw onto screen
-        self.player_1 = Tank(self, 'Nav', 'red', 45, self.terrain, g)
-        self.player_2 = Tank(self, 'CPU', 'blue', 120, self.terrain, g)
+        self.player_1 = Tank(self, 'Nav', 'red', 45, self.terrain, g/10)
+        self.player_2 = Tank(self, 'CPU', 'blue', 120, self.terrain, g/10)
         tw = self.player_1.rect.w
         p1_x = random.randint(0 + tw, int(self.w / 2 - tw))  # random loc in left half of the game area
         p2_x = random.randint(int(self.w / 2) + tw, int(self.w - tw))  # random loc in right half of the game area
@@ -283,8 +284,16 @@ class Game:
             self.weapon.add(weaponFragment4)
             self.weapon.add(weaponFragment5)
             explosions_area = self.weapon.fire()
-            self.terrain.fall(explosions_area)
-            self.tanks.update(terrain_changed=True)
+            self.redraw(tanks=True, controls=True)
+            # self.terrain.fall(explosions_area)
+            # self.tanks.update(terrain_changed=True)
+            terrain_fall_thread = threading.Thread(target=self.terrain.fall, args=[explosions_area])
+            tank_fall_thread = threading.Thread(target=self.tanks.update, kwargs={'terrain_changed': True})
+            terrain_fall_thread.start()
+            # time.sleep(0.75)
+            tank_fall_thread.start()
+            terrain_fall_thread.join()
+            tank_fall_thread.join()
             self.screen.set_clip(self.rect)
             self.update_scoreboard()
             self.redraw(tanks=True, controls=True)

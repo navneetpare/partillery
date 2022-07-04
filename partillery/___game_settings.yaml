@@ -1,6 +1,6 @@
 ---
 display:
-  fullscreen: true
+  fullscreen: false
   resolution: 720p  # 480p, 720p or 1080p
   pos_x: 1900
   pos_y: 50

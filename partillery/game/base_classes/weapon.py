@@ -95,7 +95,7 @@ class Weapon(LayeredDirty):
                 else:
                     self.game.current_player.score += fragment.damage_score
                 explosions.append(fragment.explode())
-                self.remove(fragment)
+                fragment.kill()
         return explosions
 
     def handle_terrain_collisions(self):
@@ -104,7 +104,7 @@ class Weapon(LayeredDirty):
             fragment = typing.cast(WeaponFragment, fragment)
             if self.game.terrain.mask.overlap(fragment.mask, fragment.rect.topleft) \
                     or fragment.rect.bottom >= self.game.h - 1:
-                self.remove(fragment)
+                fragment.kill()
                 explosions.append(fragment.explode())
         return explosions
 

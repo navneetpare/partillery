@@ -61,19 +61,14 @@ class Tank(BaseElement):
 
     def fall(self):
         self.projectile_launch(0, 0, pygame.time.get_ticks(), self.rect.center)
-        while self.terrain.is_falling or self.is_projectile:
-            if not self.on_terrain():
-                # print('not on terrain')
-                self.projectile_motion()
-                self.turret.update()
-                self.crosshair.update()
-                self.game.redraw(tanks=True)
-                if self.on_terrain():
-                    self.update(roll_to=self.rect.centerx)
-                    print('rolled')
-                    self.is_projectile = False
-            else:
+        while self.is_projectile:
+            self.projectile_motion()
+            self.turret.update()
+            self.crosshair.update()
+            if self.on_terrain():
+                self.update(roll_to=self.rect.centerx)
                 self.is_projectile = False
+            self.game.redraw(tanks=True)
 
     def handle_terrain_collisions(self):
         if self.on_terrain():
@@ -81,8 +76,8 @@ class Tank(BaseElement):
             self.update(roll_to=self.rect.centerx)
 
     def on_terrain(self):
-        return self.game.terrain.mask.overlap(self.mask, self.rect.topleft) or self.rect.bottom >= self.game.h
-        # return self.current_terrain_point in self.terrain.points
+        return (self.game.terrain.mask.overlap(self.mask,
+                                               self.rect.topleft) is not None) or self.rect.bottom >= self.game.h - 1
 
 
 class Turret(DirtySprite):

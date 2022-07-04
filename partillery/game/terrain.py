@@ -3,6 +3,7 @@
 # http://geomalgorithms.com/a13-_intersect-4.html
 
 # 11/04/2020 - Divide the terrain vertically into slats. Each will have its own mask.
+import threading
 import time
 import timeit
 from collections import OrderedDict
@@ -83,7 +84,7 @@ def interpolated_noise(x: float, i: int):
 def perlin_noise(x: float):
     total = 0
     p = 1.5  # persistence
-    n = 14  # Number_Of_Octaves - 1
+    n = 16  # Number_Of_Octaves - 1
     for i in range(1, n):
         frequency = 2 * i
         amplitude = p * i
@@ -255,7 +256,7 @@ class Terrain:
     def __init__(self, game, game_w, game_h, terrain_type):
         # Create a layer for terrain, with per-pixel alpha allowed
         # print('Terr gen start ' + str(pygame.time.get_ticks()))
-        self.is_falling = False
+        self.is_falling = TerrainIsFalling()
         self.game = game
         self.w = game_w
         self.game_h = game_h
@@ -406,13 +407,13 @@ class Terrain:
 
     def fall(self, area: pygame.Rect):
         if area is not None:
-            self.is_falling = True
+            self.is_falling.set_true()
             columns = self.get_columns_with_holes(area)
             update_area = get_display_update_area(area)
 
             deleted_columns = []
             while len(columns) > 0:
-                self.game.undraw(tanks=True)
+                # self.game.undraw(tanks=True)
                 for x in deleted_columns:
                     del columns[x]  # Remove columns queued for removal
                 deleted_columns.clear()  # empty the list to prevent re-deletion error
@@ -429,12 +430,9 @@ class Terrain:
                     else:
                         columns[x] = (bottom, top + 1)
                         self.y_coordinates[x] += 1
-
-                self.game.draw(tanks=True)
                 pygame.display.update(update_area)
-
-            self.is_falling = False
-        self.compute_terrain_points()
+                self.compute_terrain_points()
+            self.is_falling.set_false()
 
     def get_columns_with_holes(self, area: pygame.Rect):
         columns = OrderedDict()
@@ -479,3 +477,33 @@ class Terrain:
             return 1
         else:
             return 0
+
+
+class TerrainIsFalling:
+    def __init__(self, state=False):
+        self.lock = threading.Lock()
+        self.state = False
+
+    def set_true(self):
+        self.lock.acquire()
+        try:
+            self.state = True
+            print('lock acquired - set true')
+        finally:
+            self.lock.release()
+
+    def set_false(self):
+        self.lock.acquire()
+        try:
+            self.state = False
+            print('lock acquired - set false')
+        finally:
+            self.lock.release()
+
+    def read(self):
+        self.lock.acquire()
+        try:
+            val = self.state
+        finally:
+            self.lock.release()
+        return val
