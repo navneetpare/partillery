@@ -64,7 +64,7 @@ class BaseExplosion:
                         self.cut_out = exp_mask.to_surface(setsurface=game.sky.subsurface(self.clipped_rect),
                                                            unsetcolor=None)
                     except ValueError:
-                        done = True
+                        self.done = True
                         break
 
                     game.scene.blit(self.cut_out, self.clipped_rect)  # Erase terrain cutout from scene backup

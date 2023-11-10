@@ -67,18 +67,20 @@ class Game:
             sys.exit()
 
     def redraw(self, weapon=False, tanks=False, controls=False):
+        all_rects = []
         if weapon is True:
             self.weapon.clear(self.screen, self.scene)
-            rects = self.weapon.draw(self.screen)
-            pygame.display.update(rects)
+            all_rects.extend(self.weapon.draw(self.screen))
+            # pygame.display.update(rects)
         if tanks is True:
             self.tank_elements.clear(self.screen, self.scene)
-            rects = self.tank_elements.draw(self.screen)
-            pygame.display.update(rects)
+            all_rects.extend(self.tank_elements.draw(self.screen))
+            #pygame.display.update(rects)
         if controls is True:
             self.cpl.clear(self.screen, self.full_bg)
-            rects = self.cpl.draw(self.screen)
-            pygame.display.update(rects)
+            all_rects.extend(self.cpl.draw(self.screen))
+
+        pygame.display.update(all_rects)
 
     def undraw(self, weapon=False, tanks=False, controls=False):
         if weapon is True:
@@ -89,7 +91,7 @@ class Game:
             self.cpl.clear(self.screen, self.full_bg)
 
     def draw(self, weapon=False, tanks=False, controls=False):
-        if weapon is True:
+        if weapon is True and weapon:
             rects = self.weapon.draw(self.screen)
             pygame.display.update(rects)
         if tanks is True:
@@ -279,10 +281,10 @@ class Game:
                                              self.current_player.angle - 2, t0, v=v, g=g, explosion_radius=60)
 
             self.weapon.add(weaponFragment1)
-            self.weapon.add(weaponFragment2)
-            self.weapon.add(weaponFragment3)
-            self.weapon.add(weaponFragment4)
-            self.weapon.add(weaponFragment5)
+            # self.weapon.add(weaponFragment2)
+            # self.weapon.add(weaponFragment3)
+            # self.weapon.add(weaponFragment4)
+            # self.weapon.add(weaponFragment5)
             explosions_area = self.weapon.fire()
             self.redraw(tanks=True, controls=True)
             # self.terrain.fall(explosions_area)
