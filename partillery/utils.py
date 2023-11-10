@@ -79,7 +79,7 @@ def get_layout_control_group_names():
 
 def get_slope_radians(terr, x):
     # slope = (y2 - y1) / (x2 - x1)
-    m = - (terr.y_coordinates[x + 1] - terr.y_coordinates[x])  # ignore div by x2 - x1 which is always 1
+    m = - (terr.top_layer[x + 1] - terr.top_layer[x])  # ignore div by x2 - x1 which is always 1
     return math.atan(m)
 
 

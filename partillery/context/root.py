@@ -1,10 +1,11 @@
 import os
 import sys
-
+import faulthandler
 import pygame
 import partillery.utils as utils
 from partillery.game.game import Game
 
+faulthandler.enable()
 
 class Root:
     context = None

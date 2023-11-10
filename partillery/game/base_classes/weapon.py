@@ -25,7 +25,7 @@ class WeaponFragment(BaseElement):
         self.projectile_launch(v, angle, t0, start_pos)
 
     def update(self):
-        self.projectile_motion(kill=True)  # Base element method
+        self.projectile_motion(kill=False)  # Base element method
 
     def explode(self):
         return self.rect.center, self.explosion_radius, self.explosion_type
