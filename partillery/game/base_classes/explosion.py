@@ -1,3 +1,5 @@
+import math
+
 import pygame
 
 
@@ -9,12 +11,12 @@ class BaseExplosion:
 
         self.exp_rect = None
         self.cut_out = None
-        self.done = False
+
         self.clipped_rect = None
         exp_speed = radius / lifespan  # pixels per 1000 ms
+        colour = 255, 150, 0, 255
+        self.done = False
         t0 = pygame.time.get_ticks()
-        colour = (255, 170, 0, 255)
-
         while not self.done:
             t = pygame.time.get_ticks() - t0
             r = int(exp_speed * t)  # milliseconds
@@ -26,7 +28,10 @@ class BaseExplosion:
                     self.exp_rect.center = pos
 
                     # ---- Draw opaque explosion on temp surf
-                    pygame.draw.circle(exp_surf, colour, (self.exp_rect.w / 2, self.exp_rect.h / 2), r)
+
+                    # plain old opaque explosion - meh :/
+                    # pygame.draw.circle(exp_surf, colour, (self.exp_rect.w / 2, self.exp_rect.h / 2), r)
+                    pygame.draw.circle(exp_surf, colour, (self.exp_rect.w / 2, self.exp_rect.h / 2), r, width=12)
 
                     # TODO Desciption of the clipping and cropping code.
                     self.clipped_rect = self.exp_rect.clip(game.scene_rect)
@@ -53,7 +58,7 @@ class BaseExplosion:
                     # Setting the threshold selects only the circular area
                     exp_mask = pygame.mask.from_surface(cropped_exp_surf, 254)
 
-                    # ---- Cut out the circular area from  the terrain mask. This is only for collisions
+                    # ---- Cut out the circular area from the terrain mask. This is only for collisions
                     game.terrain.mask.erase(exp_mask, self.clipped_rect.topleft)
 
                     # ---- Draw the sky at the circular area.
@@ -71,6 +76,7 @@ class BaseExplosion:
                     game.screen.blit(self.cut_out, self.clipped_rect)  # Erase terrain from screen
                     game.screen.blit(cropped_exp_surf, self.clipped_rect)  # Draw explosion to screen
                     pygame.display.update(self.clipped_rect)
+                    game.screen.blit(self.cut_out, self.clipped_rect)
 
             else:
                 self.done = True
