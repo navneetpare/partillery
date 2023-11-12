@@ -31,9 +31,12 @@ class Game:
         self.h = int(resolution[1] * config.game.height_fraction)
         self.w = resolution[0]
 
+        # Choose a random scene
+        chosen_scene = random.choice(self.config.game.scenes)
         # Used for drawing the sky and as a background when clearing explosion areas
-        self.sky = pygame.transform.scale(utils.load_image_resource('night_starry_blue.png'),
+        self.sky = pygame.transform.scale(utils.load_image_resource(chosen_scene.background),
                                           (self.w, self.h)).convert_alpha()
+
         # Used as a background for turret, crosshair and tank moves. Explosions cut this surface
         # The terrain will be drawn on this.
         self.scene = self.sky.copy()
@@ -45,18 +48,23 @@ class Game:
         self.full_bg = None
 
         self.rect = pygame.Rect((0, 0), self.resolution)  # For screen clipping
-        self.terrain = None
-        self.terrain_falling = False  # To track terrain fall after explosions.
         self.current_player = None
         self.player_1 = None
         self.player_2 = None
-        self.tank_elements = None   # Sprite group for drawing
-        self.tanks = None   # Sprite group for tank collisions
+        self.tank_elements = None  # Sprite group for drawing
+        self.tanks = None  # Sprite group for tank collisions
         self.cpl = None  # Control panel reference
         self.move_start_time = None
         self.pos_x = None  # Util var to track tank moves
         self.weapon = None  # The actual weapon object
         self.weapon_choice = None  # The weapon selected from the object
+
+        # ------ Create the terrain
+        self.terrain_falling = False  # To track terrain fall after explosions.
+        self.terrain = Terrain(self, self.w, self.h, 'Random', chosen_scene.terrain_layers)
+
+        # ------ Create the control panel and controls
+        self.cpl = ControlPanel(0, self.h, self.w, self.resolution[1] - self.h, self.config)
 
     def handle_escape_key(self, event: pygame.event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -75,7 +83,7 @@ class Game:
         if tanks is True:
             self.tank_elements.clear(self.screen, self.scene)
             all_rects.extend(self.tank_elements.draw(self.screen))
-            #pygame.display.update(rects)
+            # pygame.display.update(rects)
         if controls is True:
             self.cpl.clear(self.screen, self.full_bg)
             all_rects.extend(self.cpl.draw(self.screen))
@@ -175,15 +183,9 @@ class Game:
         # config = self.config
         g = self.config.physics.gravity
 
-        # ------ Create the terrain
-        self.terrain = Terrain(self, self.w, self.h, 'Random')
-
-        # ------ Create the control panel and controls
-        self.cpl = ControlPanel(0, self.h, self.w, self.resolution[1] - self.h, self.config)
-
         # ------ Create tank objects, move them and draw onto screen
-        self.player_1 = Tank(self, 'Nav', 'red', 45, self.terrain, g/10)
-        self.player_2 = Tank(self, 'CPU', 'blue', 120, self.terrain, g/10)
+        self.player_1 = Tank(self, 'Rick', 'red', 45, self.terrain, g / 10)
+        self.player_2 = Tank(self, 'Morty', 'blue', 120, self.terrain, g / 10)
         tw = self.player_1.rect.w
         p1_x = random.randint(0 + tw, int(self.w / 2 - tw))  # random loc in left half of the game area
         p2_x = random.randint(int(self.w / 2) + tw, int(self.w - tw))  # random loc in right half of the game area
@@ -209,6 +211,7 @@ class Game:
         self.update_scoreboard()
         # print('Tanks redraw start ' + str(pygame.time.get_ticks()))
         self.redraw(tanks=True, controls=True)
+
         # print('Tanks redraw end ' + str(pygame.time.get_ticks()))
 
         # Game modes

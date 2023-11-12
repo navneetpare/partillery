@@ -29,7 +29,7 @@ class Tank(BaseElement):
         self.dirty = 2
         self.turret = Turret(self)
         self.crosshair = CrossHair(self)
-        self.selected_weapon = "Plain bomb"
+        self.selected_weapon = "Plain ammo"
         self.resting = False
 
     def update(self, **kwargs):

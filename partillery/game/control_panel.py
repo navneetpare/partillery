@@ -267,7 +267,7 @@ class Viewer(DirtySprite):
 
     def update(self, text):
         self.image.fill((0, 0, 0))
-        text_surf = self.font.render(str(text), True, (255, 190, 0), (0, 0, 0))
+        text_surf = self.font.render(str(text), True, (255, 230, 200), (0, 0, 0))
         text_surf_rect = text_surf.get_rect()
         # We take relative center of the viewer instead of absolute position
         # Because we will blit to viewer surf instead of screen.

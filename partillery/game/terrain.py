@@ -1,13 +1,10 @@
 # Terrain layer thickness needs to be pixel based.
 # Drawing vertical segments does not account for slope.
 # http://geomalgorithms.com/a13-_intersect-4.html
-
+import ast
 # 11/04/2020 - Divide the terrain vertically into slats. Each will have its own mask.
 import threading
-import time
-import timeit
 from collections import OrderedDict
-
 import pygame
 from pygame import Rect
 import math
@@ -15,25 +12,8 @@ import random
 import numpy as np
 from scipy import interpolate
 
-# import matplotlib.pyplot as plt
 
-# Colours
-
-snow = 150, 150, 150
-g1 = 0, 180, 0  # green opaque
-g2 = 0, 150, 0  # green opaque
-g3 = 0, 120, 0  # green opaque
-g4 = 0, 90, 0  # green opaque
-g5 = 0, 60, 0  # green opaque
-
-# --- awesome palette
-teal = 56, 104, 80
-b1 = 240, 192, 160
-b2 = 152, 112, 80
-b3 = 112, 80, 48
-b4 = 56, 16, 0
-
-d1_for_purple = 21, 21, 21
+#layers = [(snow, 10), (snow1, 6), (snow2, 6), (snow3, 4), (snow4, 4), (dark, 'bottom')]
 
 # Coefficients for the main noise generator
 a = [15731, 16703, 23143, 19843, 12744, 97586, 36178, 88412, 78436, 78436, 96653, 12598, 32158, 98764, 11579, 65989,
@@ -83,7 +63,7 @@ def interpolated_noise(x: float, i: int):
 
 def perlin_noise(x: float):
     total = 0
-    p = 1.5  # persistence
+    p = 1.8  # persistence
     n = 16  # Number_Of_Octaves - 1
     for i in range(1, n):
         frequency = 2 * i
@@ -115,7 +95,7 @@ def generate(w, h, terrain_type):
             # p350 = random.randint(4 * ws, 5 * ws), random.randint(2 * hs, 3 * hs)  # peak2
             p400 = random.randint(4.5 * ws, 6 * ws), random.randint(3 * hs, 5 * hs)  # right curve
             p500 = w, random.randint(5.5 * hs, 7.5 * hs)  # right edge
-            # add centroids of right angled triangle with p1 / p2 to add to the curve
+            # add centroids of right-angled triangle with p1 / p2 to add to the curve
             pa = p200[0], p100[1]
             pb = p400[0], p500[1]
             p150 = (p100[0] + pa[0] + p200[0]) / 3, (p100[1] + pa[1] + p200[1]) / 3
@@ -124,12 +104,12 @@ def generate(w, h, terrain_type):
 
         # Valley
         elif terrain_type == "Valley":
-            p100 = 0, random.randint(1 * hs, 2.5 * hs)  # left edge
-            p200 = random.randint(2.5 * ws, 3.5 * ws), random.randint(3 * hs, 5 * hs)  # left curve
+            p100 = 0, random.randint(2.5 * hs, 3.5 * hs)  # left edge
+            p200 = random.randint(2.5 * ws, 3.5 * ws), random.randint(4 * hs, 5.5 * hs)  # left curve
             p300 = random.randint(3.5 * ws, 4.5 * ws), random.randint(6 * hs, 7 * hs)  # trough
-            p400 = random.randint(4.5 * ws, 5.5 * ws), random.randint(3 * hs, 5 * hs)  # right curve
-            p500 = w, random.randint(1 * hs, 2.5 * hs)  # right edge
-            # add centroids of right angled triangle with p1 / p2 to add to the curve
+            p400 = random.randint(4.5 * ws, 5.5 * ws), random.randint(4 * hs, 5.5 * hs)  # right curve
+            p500 = w, random.randint(2.5 * hs, 3.5 * hs)  # right edge
+            # add centroids of right-angled triangle with p1 / p2 to add to the curve
             pa = p200[0], p100[1]
             pb = p400[0], p500[1]
             p150 = (p100[0] + pa[0] + p200[0]) / 3, (p100[1] + pa[1] + p200[1]) / 3
@@ -253,7 +233,7 @@ def get_optimal_display_update_areas(columns: OrderedDict):
 
 
 class Terrain:
-    def __init__(self, game, game_w, game_h, terrain_type):
+    def __init__(self, game, game_w, game_h, terrain_type, layers):
         # Create a layer for terrain, with per-pixel alpha allowed
         # print('Terr gen start ' + str(pygame.time.get_ticks()))
         self.is_falling = TerrainIsFalling()
@@ -271,33 +251,44 @@ class Terrain:
         # temp y array which will be moved downwards for painting layers of terrain
         y = np.array(self.y_coordinates)  # for fast numpy methods
 
-        green_val = 255
-        # Top crust
-        for i in range(1, 20):
-            m = np.column_stack((x, y))
-            # pygame.draw.lines(self.surf, b1, False, m)
-            pygame.draw.lines(self.image, snow, False, m)
-            y += 1
-            y.clip(0, game_h)
-        for i in range(20, 60):
-            m = np.column_stack((x, y))
-            pygame.draw.lines(self.image, teal, False, m)
-            y += 1
-            y.clip(0, game_h)
-        for i in range(60, 100):
-            m = np.column_stack((x, y))
-            pygame.draw.lines(self.image, teal, False, m)
-            y += 1
-            y.clip(0, game_h)
-        # Body gradient
-        for i in range(100, game_h):
-            m = np.column_stack((x, y))
-            # pygame.draw.lines(self.surf, b4, False, m)
-            pygame.draw.lines(self.image, teal, False, m)
-            # pygame.draw.lines(self.surf, b4, False, m)
-            green_val -= 0.3
-            y += 1
-            y.clip(0, game_h)
+        # Draw colour layers
+        named_colours = self.game.config.game.named_colours
+
+        for layer in layers:
+            # get the colour string and convert to tuple
+            current_colour = ast.literal_eval(getattr(named_colours, layer.col))
+            j = 1
+            k = layer.h
+            if k == -1:
+                k = game_h
+
+            for i in range(j, k):
+                m = np.column_stack((x, y))
+                pygame.draw.lines(self.image, current_colour, False, m)
+                y += 1
+                y.clip(0, game_h)
+            j += k
+        # for i in range(1, 20):
+        #     m = np.column_stack((x, y))
+        #     pygame.draw.lines(self.image, layers[0], False, m)
+        #     y += 1
+        #     y.clip(0, game_h)
+        # for i in range(20, 30):
+        #     m = np.column_stack((x, y))
+        #     pygame.draw.lines(self.image, layers[1], False, m)
+        #     y += 1
+        #     y.clip(0, game_h)
+        # for i in range(30, 38):
+        #     m = np.column_stack((x, y))
+        #     pygame.draw.lines(self.image, layers[2], False, m)
+        #     y += 1
+        #     y.clip(0, game_h)
+        # # Body gradient
+        # for i in range(100, game_h):
+        #     m = np.column_stack((x, y))
+        #     pygame.draw.lines(self.image, layers[3], False, m)
+        #     y += 1
+        #     y.clip(0, game_h)
 
         # get mask after drawing complete
         self.mask = pygame.mask.from_surface(self.image, 254)
@@ -375,8 +366,10 @@ class Terrain:
         outline_floor_index_of_right = np.argmax(outline_floor, axis=0)[0]
         outline_floor_left_x = outline_floor[outline_floor_index_of_left][0]
         outline_floor_right_x = outline_floor[outline_floor_index_of_right][0]
-        outline_index_of_left = np.where((outline_arr[:, 0] == outline_floor_left_x) & (outline_arr[:, 1] == floor_y))[0]
-        outline_index_of_right = np.where((outline_arr[:, 0] == outline_floor_right_x) & (outline_arr[:, 1] == floor_y))[0]
+        outline_index_of_left = np.where((outline_arr[:, 0] == outline_floor_left_x) & (outline_arr[:, 1] == floor_y))[
+            0]
+        outline_index_of_right = \
+        np.where((outline_arr[:, 0] == outline_floor_right_x) & (outline_arr[:, 1] == floor_y))[0]
         outline_arr_slice_1 = outline_arr[int(outline_index_of_left):, :]
         outline_arr_slice_2 = outline_arr[:int(outline_index_of_right) + 1, :]
         points_arr = np.vstack((outline_arr_slice_1, outline_arr_slice_2))

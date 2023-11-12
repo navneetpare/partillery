@@ -8,6 +8,48 @@ display:
   caption: Partillery
   window_icon: window_icon.png
 game:
+  named_colours: # define named colours here, then use them in scene -> terrain -> layer
+    shiny_snow: 200, 200, 200
+    snow: 150, 150, 150
+    snow1: 145, 145, 145
+    snow2: 140, 140, 140
+    snow3: 135, 135, 135
+    snow4: 130, 130, 130
+    tar: 15, 15, 15
+    desert: 198, 154, 107
+    mud: 86, 56, 22
+  scenes:
+    - name: 'calm_night'
+      background: 'bg_calm_night.png'
+      terrain_layers: # '<named colour>, <layer height in pixels>'. Use '-1' to define single colour throughout or the bottom layer.
+        - col: snow
+          h: 10
+        - col: snow1
+          h: 6
+        - col: snow2
+          h: 6
+        - col: snow3
+          h: 4
+        - col: snow4
+          h: 4
+        - col: tar
+          h: -1
+
+    - name: 'aurora_borealis'
+      background: 'bg_aurora_borealis_2.png'
+      terrain_layers:
+        - col: shiny_snow
+          h: -1
+
+    - name: 'desert_night'
+      background: 'bg_desert_night.png'
+      terrain_layers:
+        - col: desert
+          h: 20
+        - col: mud
+          h: -1
+
+  background: 010.png
   height_fraction: 0.8
   tank_width: 32
   tank_height: 16
