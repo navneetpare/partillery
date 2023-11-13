@@ -1,7 +1,13 @@
 # partillery
 An artillery game written using Pygame.
 
-**Background:**
+### Demo 
+(Links to YouTube)
+
+[![IMAGE ALT TEXT](http://img.youtube.com/vi/HO-DJegOd1w/0.jpg)](http://www.youtube.com/watch?v=HO-DJegOd1w "Partillery")
+
+
+### Background:
 
 Pygame is minimal game framework for Python. It provides basic drawing functions and 'Sprites', which are movable objects that can load custom images and detect object collsions.
 
@@ -11,7 +17,7 @@ Instead, the focus here is on detecting pixel-perfect collisions between an irre
 
 Without Sprites, everthing needs to be painted and repainted on the screen with your own code, e.g. redrawing a small bit of the sky in the area where the terrain is blown away.  
 
-**Cool stuff:**
+### Cool stuff:
 - A randomly generated terrain (macro shapes 'Hill', 'Valley' and 'Cliff' superimposed with a custom Perlin noise function which generates an undulated surface).
 - Tanks behave almost like rigid bodies and can roll along the terrain as well as rest on concave / convex surfaces.
 - Explosions properly cut the terrain. The cut area can actually be traversed by the tank afterwards.
@@ -20,16 +26,10 @@ Without Sprites, everthing needs to be painted and repainted on the screen with 
 - Projectile motion (well)
 - Explosions can use maths functions to generate nice effects (TODO).
 
-**Graphics:**
+### Graphics:
 Everything was painstakingly designed in GIMP (Ubuntu), including the backgrounds, objects, logo and the control panel.
 
 The game is far from finished / perfect, but like all things good, this is a cool journey.
-
-Here's a demo (Links to YouTube):
-
-[![IMAGE ALT TEXT](http://img.youtube.com/vi/HO-DJegOd1w/0.jpg)](http://www.youtube.com/watch?v=HO-DJegOd1w "Partillery")
-
-
 
 
 
