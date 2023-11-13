@@ -85,6 +85,7 @@ def generate(w, h, terrain_type):
 
     if terrain_type == "Random":
         terrain_type = random.choice(['Valley', 'Hill', 'Cliff'])
+        terrain_type = 'Valley'
         # terrain_type = 'Hill'
         # interpolation_type = 'linear'  # Default
         # Hill

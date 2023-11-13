@@ -5,7 +5,7 @@ Issues
 [x] Random init location of tank - must not fall outside or intersect with play window
 [x] Explosion, deletes tank too.
 [x] Explosion may partially fall outside the window - gives a rect error
-[ ] Tank fall after explosion
+[X] Tank fall after explosion
 
 Features
 ----------

@@ -303,7 +303,7 @@ class Game:
             self.update_scoreboard()
             self.redraw(tanks=True, controls=True)
             self.mode = self.MODE_FIRE_CONTROL
-            # self.switch_player()
+            self.switch_player()
             # self.players.clear(self.screen, self.scene)
             # tank_rects = self.players.draw(self.screen)
             # pygame.display.update()

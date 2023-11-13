@@ -19,27 +19,27 @@ game:
     desert: 198, 154, 107
     mud: 86, 56, 22
   scenes:
-    - name: 'calm_night'
-      background: 'bg_calm_night.png'
-      terrain_layers: # '<named colour>, <layer height in pixels>'. Use '-1' to define single colour throughout or the bottom layer.
-        - col: snow
-          h: 10
-        - col: snow1
-          h: 6
-        - col: snow2
-          h: 6
-        - col: snow3
-          h: 4
-        - col: snow4
-          h: 4
-        - col: tar
-          h: -1
+#    - name: 'calm_night'
+#      background: 'bg_calm_night.png'
+#      terrain_layers: # '<named colour>, <layer height in pixels>'. Use '-1' to define single colour throughout or the bottom layer.
+#        - col: snow
+#          h: 10
+#        - col: snow1
+#          h: 6
+#        - col: snow2
+#          h: 6
+#        - col: snow3
+#          h: 4
+#        - col: snow4
+#          h: 4
+#        - col: tar
+#          h: -1
 
-    - name: 'aurora_borealis'
-      background: 'bg_aurora_borealis_2.png'
-      terrain_layers:
-        - col: shiny_snow
-          h: -1
+#    - name: 'aurora_borealis'
+#      background: 'bg_aurora_borealis_2.png'
+#      terrain_layers:
+#        - col: shiny_snow
+#          h: -1
 
     - name: 'desert_night'
       background: 'bg_desert_night.png'
